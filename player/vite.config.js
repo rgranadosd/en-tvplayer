@@ -12,6 +12,13 @@ function getExtraPlaylists() {
   return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf-8')) : [];
 }
 
+// The favorites API (favorites/server.mjs) for this build, from player/favorites.local.json (not in git):
+// {"url": "http://192.168.1.200:5002"}. Without the file, the Red key has no favorites to keep.
+function getFavoritesUrl() {
+  const file = path.resolve(__dirname, 'favorites.local.json');
+  return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf-8')).url || '' : '';
+}
+
 function getAppVersion() {
   const rootPkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'package.json'), 'utf-8'));
   return rootPkg.version || '0.0.0';
@@ -21,6 +28,7 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(getAppVersion()),
     __EXTRA_PLAYLISTS__: JSON.stringify(getExtraPlaylists()),
+    __FAVORITES_URL__: JSON.stringify(getFavoritesUrl()),
   },
   root: '.',
   base: '/enplayer/',

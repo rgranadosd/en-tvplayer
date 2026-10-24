@@ -12,6 +12,7 @@ export default [
         ...globals.browser,
         __APP_VERSION__: 'readonly',
         __EXTRA_PLAYLISTS__: 'readonly',
+        __FAVORITES_URL__: 'readonly',
       },
     },
     rules: {

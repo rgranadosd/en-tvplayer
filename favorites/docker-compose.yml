@@ -1,0 +1,19 @@
+# EN-IPTV favorites API (see README.md). Next to server.mjs:
+#   docker compose up -d
+# The favorites stay in ./data/favorites.yml (kept across restarts and updates).
+services:
+  en-iptv-favorites:
+    image: node:22-alpine
+    container_name: en-iptv-favorites
+    restart: unless-stopped
+    command: ["node", "/app/server.mjs", "5002", "/data/favorites.yml"]
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./server.mjs:/app/server.mjs:ro
+      - ./data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5002/favorites"]
+      interval: 60s
+      timeout: 5s
+      retries: 3

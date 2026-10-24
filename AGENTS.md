@@ -36,12 +36,14 @@ en-tvplayer/
 │   │   ├── update.js    Update checker + opt-in ping
 │   │   ├── config.js    localStorage settings
 │   │   ├── utils.js     Shared utilities
+│   │   ├── favorites.js Favorites (Red key) via the favorites API + app-control channel requests
 │   │   ├── logic.js     Pure DOM-free logic (testable, no side effects)
 │   │   └── *.test.js    Vitest suites, colocated per module (§10)
 │   ├── public/          Static assets
 │   └── vite.config.js   Vite configuration
 ├── tizen/               WGT build tools
 ├── scripts/             Release automation (`npm run release`)
+├── favorites/           Favorites API (server.mjs → favorites.yml), read by Raflix's "Directos" tab
 ├── proxy/               Desktop testing relay (CORS + Origin/Referer/UA fix)
 │   ├── proxy.mjs        HTTPS relay — prefix channel URLs to test DRM on desktop
 │   ├── header-rules.json Hostname → header map
@@ -78,8 +80,9 @@ en-tvplayer/
 | Enter | Select channel |
 | Back | Close menu |
 | Volume ↑/↓ | Adjust volume |
+| Red | Add/remove favorite (playing channel, or the focused one in the list) — needs `favorites/` running |
 
-**Note:** Other remote buttons (color keys, channel up/down, etc.) are not yet supported.
+Opened by another app with Tizen app-control data `channel` (+ `group`), the app tunes that channel by name.
 
 ## 6. Key Features
 

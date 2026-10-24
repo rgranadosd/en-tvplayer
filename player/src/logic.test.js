@@ -3,6 +3,7 @@ import {
   filterDisplayChannels,
   findResumeIndex,
   findIntentIndex,
+  findRequestedIndex,
   segment404Decision,
   lastResortDecision,
   tokenRecoveryDecision,
@@ -255,5 +256,27 @@ describe('playlistsToAdd', () => {
   it('copes with missing lists', () => {
     expect(playlistsToAdd(undefined, undefined, undefined)).toEqual([]);
     expect(playlistsToAdd([tdt], [{ name: 'No URL' }], [])).toEqual([]);
+  });
+});
+
+describe('findRequestedIndex', () => {
+  const list = [
+    { name: 'ESPORT3', group: '00 - Match' },
+    { name: 'ESPORT3', group: 'OTROS' },
+    { name: 'La 1', group: 'Hidden' },
+    { name: 'Loose' },
+  ];
+  it('prefers the same name in the same group', () => {
+    expect(findRequestedIndex(list, { name: 'ESPORT3', group: 'OTROS' }, [])).toBe(1);
+  });
+  it('falls back to the first with that name', () => {
+    expect(findRequestedIndex(list, { name: 'ESPORT3', group: 'Gone' }, [])).toBe(0);
+    expect(findRequestedIndex(list, { name: 'Loose', group: '' }, [])).toBe(3);
+  });
+  it('skips hidden groups and unknown names', () => {
+    expect(findRequestedIndex(list, { name: 'La 1', group: 'Hidden' }, ['Hidden'])).toBe(-1);
+    expect(findRequestedIndex(list, { name: 'ESPORT3', group: 'OTROS' }, ['OTROS'])).toBe(0);
+    expect(findRequestedIndex(list, { name: 'Nope' }, [])).toBe(-1);
+    expect(findRequestedIndex(list, null, [])).toBe(-1);
   });
 });

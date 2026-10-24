@@ -37,7 +37,8 @@ export function timedFetch(url, options = {}, timeoutMs = 8000) {
   return { promise, abort };
 }
 
-export function processStreamUrl(rawUrl) {  // Kodi pipe suffix, literal '|' or URL-encoded '%7C' (playlists that
+export function processStreamUrl(rawUrl) {
+  // Kodi pipe suffix, literal '|' or URL-encoded '%7C' (playlists that
   // escaped it, e.g. `cenc.mpd?%7CdrmScheme=clearkey&drmLicense=KID:KEY`).
   // The suffix is player syntax, never part of the HTTP request URL.
   let pipeIdx = rawUrl.indexOf('|');
@@ -88,7 +89,10 @@ export function extractAuthQuery(customHeaders) {
   if (!customHeaders) return null;
   let cookie = null;
   for (const [k, v] of Object.entries(customHeaders)) {
-    if (String(k).toLowerCase() === 'cookie' && v) { cookie = String(v); break; }
+    if (String(k).toLowerCase() === 'cookie' && v) {
+      cookie = String(v);
+      break;
+    }
   }
   if (!cookie) return null;
   const out = [];
@@ -98,8 +102,10 @@ export function extractAuthQuery(customHeaders) {
     const name = part.slice(0, eq).trim();
     const value = part.slice(eq + 1).trim();
     if (!name || !value) continue;
-    if (AUTH_COOKIE_NAMES.includes(name.toLowerCase()) &&
-        !out.some((p) => p.toLowerCase().startsWith(name.toLowerCase() + '='))) {
+    if (
+      AUTH_COOKIE_NAMES.includes(name.toLowerCase()) &&
+      !out.some((p) => p.toLowerCase().startsWith(name.toLowerCase() + '='))
+    ) {
       out.push(name + '=' + value);
     }
   }
@@ -184,7 +190,9 @@ export function parseStreamHeaders(raw) {
 }
 
 function normalizeHex(s) {
-  return String(s || '').replace(/-/g, '').toLowerCase();
+  return String(s || '')
+    .replace(/-/g, '')
+    .toLowerCase();
 }
 
 function isHex(s) {
@@ -211,7 +219,10 @@ export function parseLicenseKeyValue(raw) {
         const colonIdx = pair.indexOf(':');
         if (colonIdx === -1) continue;
         const k = pair.slice(0, colonIdx).trim().replace(/^"|"$/g, '');
-        const v = pair.slice(colonIdx + 1).trim().replace(/^"|"$/g, '');
+        const v = pair
+          .slice(colonIdx + 1)
+          .trim()
+          .replace(/^"|"$/g, '');
         if (k && v) obj[k] = v;
       }
     }
@@ -251,6 +262,7 @@ export function parseM3u(text) {
       const name = sepIdx >= 0 ? line.slice(sepIdx + 1).trim() : 'Channel ' + (index + 1);
       const attrPart = sepIdx >= 0 ? line.slice(0, sepIdx) : line;
       const groupMatch = attrPart.match(/\bgroup-title="([^"]*)"/);
+      const logoMatch = attrPart.match(/\btvg-logo="([^"]*)"/);
       const chnoMatch = attrPart.match(/\btvg-chno="([^"]*)"/) || attrPart.match(/\bchannel-number="([^"]*)"/);
       let drm = null;
       let userAgent = null;
@@ -310,7 +322,17 @@ export function parseM3u(text) {
           customHeaders = { ...(customHeaders || {}), ...extraHeaders };
         }
         const parsedChno = chnoMatch ? parseInt(chnoMatch[1], 10) : NaN;
-        const ch = { name, url, channelNumber: !isNaN(parsedChno) && parsedChno > 0 ? parsedChno : index + 1, drm, userAgent, customHeaders, authQuery: extractAuthQuery(customHeaders), group: groupMatch ? groupMatch[1] : null };
+        const ch = {
+          name,
+          url,
+          channelNumber: !isNaN(parsedChno) && parsedChno > 0 ? parsedChno : index + 1,
+          drm,
+          userAgent,
+          customHeaders,
+          authQuery: extractAuthQuery(customHeaders),
+          group: groupMatch ? groupMatch[1] : null,
+          logo: logoMatch ? logoMatch[1] : null,
+        };
         result.push(ch);
         index++;
         i = urlIdx;
@@ -323,7 +345,9 @@ export function parseM3u(text) {
 function fetchWithTimeout(url, ms) {
   return Promise.race([
     fetch(url),
-    new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timed out. Please check your internet connection.')), ms)),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Connection timed out. Please check your internet connection.')), ms),
+    ),
   ]);
 }
 
@@ -347,7 +371,8 @@ export async function fetchPlaylist(url) {
   }
   if (text.includes('#EXTM3U')) {
     return parseM3u(text);
-  }    throw new Error('This playlist format is not supported. Please use an M3U or JSON playlist.');
+  }
+  throw new Error('This playlist format is not supported. Please use an M3U or JSON playlist.');
 }
 
 // Playlist entry dispatcher: Xtream logins go through the Xtream API,

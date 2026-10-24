@@ -16,6 +16,15 @@ describe('compareVersions', () => {
     expect(compareVersions('3.1.9', '3.2.0')).toBeLessThan(0);
   });
 
+  it('orders release candidates before their release', () => {
+    expect(compareVersions('1.0.0', '1.0.0-rc.1')).toBeGreaterThan(0);
+    expect(compareVersions('1.0.0-rc.1', '1.0.0')).toBeLessThan(0);
+    expect(compareVersions('1.0.0-rc.2', '1.0.0-rc.1')).toBeGreaterThan(0);
+    expect(compareVersions('1.0.0-rc.10', '1.0.0-rc.9')).toBeGreaterThan(0);
+    expect(compareVersions('1.0.0-rc.1', '1.0.0-rc.1')).toBe(0);
+    expect(compareVersions('0.9.0', '1.0.0-rc.1')).toBeLessThan(0);
+  });
+
   it('treats missing segments as zero', () => {
     expect(compareVersions('3.2', '3.2.0')).toBe(0);
   });

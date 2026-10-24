@@ -1,6 +1,6 @@
 {
   "name": "en-tvplayer",
-  "version": "3.2.0",
+  "version": "1.0.0-rc.1",
   "description": "Samsung Tizen TV IPTV Player — install on any Tizen 5.0+ TV",
   "type": "module",
   "scripts": {
@@ -15,6 +15,7 @@
     "tizen": "cd tizen && node package.mjs",
     "tizen:install": "python3 tizen/install.py",
     "proxy": "npm start -w proxy",
+    "favorites": "node favorites/server.mjs",
     "prepare": "husky"
   },
   "workspaces": [

@@ -1,6 +1,21 @@
 # Changelog
 
-All notable changes to EN TV Player will be documented in this file.
+All notable changes to RAFLIX IPTV (forked from EN TV Player) will be documented in this file.
+
+## [1.0.0-rc.1] - 2026-10-24 — RAFLIX IPTV
+
+First RAFLIX IPTV release candidate, forked from EN IPTV 3.2.0 (its history follows below).
+
+### Added
+- New name and logo: RAFLIX IPTV (forked from EN IPTV). Icon sources in `tizen/icons/raflix-iptv-*.svg`; the app id stays `IPTVPlayer.IPTV`, so it installs over EN IPTV and keeps its settings.
+- Favorites: Menu (→) › Add to Favorites (or the Red key) adds or removes the channel playing; the Red key in the channel list uses the focused one. Favorite channels show a ♥ in the list.
+- Favorites live in the favorites API (`favorites/`, Docker Compose), so other apps can read them: Raflix's "Directos" tab shows them as cards.
+- Opened by another app with a channel (Tizen app control data `channel` + `group`), the app tunes that channel.
+- Channels keep their `tvg-logo`.
+
+---
+
+# EN IPTV (upstream) history
 
 ## [3.2.0] - 2026-10-14
 

@@ -32,6 +32,19 @@ export function findIntentIndex(channels, intent) {
   );
 }
 
+// A channel asked for by name (a favorite opened from another app): the same
+// name in the same group first, else the first with that name. Channels in
+// hidden groups don't count. Returns the index, or -1.
+export function findRequestedIndex(channels, request, hiddenGroups) {
+  if (!request || !request.name) return -1;
+  const hidden = hiddenGroups || [];
+  const groupOf = (ch) => (ch && ch.group) || 'Ungrouped';
+  const usable = (ch) => ch && ch.name === request.name && !hidden.includes(groupOf(ch));
+  const list = channels || [];
+  const exact = list.findIndex((ch) => usable(ch) && groupOf(ch) === (request.group || 'Ungrouped'));
+  return exact >= 0 ? exact : list.findIndex(usable);
+}
+
 // Live-segment-404 reload budget: 3 edge re-syncs per URL inside a
 // 5-minute window, then the link is condemned. Pure version of the
 // player.js segment404* state machine — pass the stored state in, get

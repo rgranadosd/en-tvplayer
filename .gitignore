@@ -23,6 +23,12 @@ beta/
 # Extra playlists for local builds: their URLs can carry logins
 player/playlists.local.json
 
+# Favorites API address for local builds, and the favorites themselves
+player/favorites.local.json
+favorites/favorites.yml
+favorites/data/
+favorites/favorites.yml.tmp
+
 # Stable folder (build output)
 stable/
 

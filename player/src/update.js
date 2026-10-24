@@ -5,7 +5,7 @@
 import { APP_VERSION, getSettings, saveSettings } from './config.js';
 import { timedFetch } from './utils.js';
 
-const VERSION_URL = 'https://cdn.jsdelivr.net/gh/Nur-allhi/en-tvplayer@main/version.json';
+const VERSION_URL = 'https://cdn.jsdelivr.net/gh/rgranadosd/en-tvplayer@main/version.json';
 // Deploy the worker in docs/TELEMETRY.md and paste its URL here to enable
 // anonymous install counting. Empty = ping disabled, update check still works.
 const PING_URL = '';
@@ -36,14 +36,21 @@ export function setConsented(allowed) {
   saveSettings({ updateCheck: !!allowed });
 }
 
+// x.y.z with an optional pre-release ("1.0.0-rc.1"): a pre-release comes before its release, and
+// rc.2 after rc.1.
 export function compareVersions(a, b) {
-  const pa = String(a).split('.').map(Number);
-  const pb = String(b).split('.').map(Number);
+  const [ca, pa = ''] = String(a).split('-');
+  const [cb, pb = ''] = String(b).split('-');
+  const na = ca.split('.').map(Number);
+  const nb = cb.split('.').map(Number);
   for (let i = 0; i < 3; i++) {
-    const diff = (pa[i] || 0) - (pb[i] || 0);
+    const diff = (na[i] || 0) - (nb[i] || 0);
     if (diff !== 0) return diff;
   }
-  return 0;
+  if (pa === pb) return 0;
+  if (!pa) return 1;
+  if (!pb) return -1;
+  return pa.localeCompare(pb, 'en', { numeric: true });
 }
 
 function readCache() {

@@ -1,0 +1,84 @@
+// Favorites, kept by the favorites API (favorites/server.mjs, on an always-on machine) so other apps on the TV
+// (Raflix's "Directos" tab) can read them: a Tizen app can't read another's storage. A copy stays in localStorage
+// for when the server doesn't answer. The server's address comes from player/favorites.local.json at build time.
+import { timedFetch } from './utils.js';
+
+const CACHE_KEY = 'en_favorites';
+const BASE = String(__FAVORITES_URL__ || '').replace(/\/+$/, '');
+
+let list = readCache();
+
+function readCache() {
+  try {
+    const v = JSON.parse(localStorage.getItem(CACHE_KEY));
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+}
+
+function keep(next) {
+  if (!Array.isArray(next)) return;
+  list = next;
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(list));
+  } catch {}
+}
+
+export function isConfigured() {
+  return !!BASE;
+}
+
+export function isFavorite(channel) {
+  return !!channel && list.some((f) => f.name === channel.name);
+}
+
+export async function refreshFavorites() {
+  if (!BASE) return list;
+  try {
+    const res = await timedFetch(BASE + '/favorites', {}, 5000).promise;
+    if (res.ok) keep((await res.json()).favorites);
+  } catch {}
+  return list;
+}
+
+// Adds or removes the channel; resolves to its new state, or null when the server couldn't save it.
+export async function toggleFavorite(channel) {
+  if (!BASE || !channel) return null;
+  const adding = !isFavorite(channel);
+  try {
+    const res = adding
+      ? await timedFetch(
+          BASE + '/favorites',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: channel.name, group: channel.group || '', logo: channel.logo || '' }),
+          },
+          5000,
+        ).promise
+      : await timedFetch(BASE + '/favorites?name=' + encodeURIComponent(channel.name), { method: 'DELETE' }, 5000)
+          .promise;
+    if (!res.ok) return null;
+    keep((await res.json()).favorites);
+    return adding;
+  } catch {
+    return null;
+  }
+}
+
+// The channel another app asked for when it opened this one (Raflix: Tizen app control data "channel" and "group").
+export function requestedChannel() {
+  try {
+    const req = window.tizen.application.getCurrentApplication().getRequestedAppControl();
+    const data = (req && req.appControl && req.appControl.data) || [];
+    const get = (key) => {
+      const d = data.find((x) => x.key === key);
+      return d && d.value && d.value[0] ? String(d.value[0]) : '';
+    };
+    const name = get('channel');
+    return name ? { name, group: get('group') } : null;
+  } catch {
+    return null;
+  }
+}

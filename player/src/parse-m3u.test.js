@@ -12,7 +12,7 @@ describe('parseM3u', () => {
   it('parses names, groups and playlist channel numbers', () => {
     const ch = parseM3u(M3U_BASIC);
     expect(ch).toHaveLength(2);
-    expect(ch[0]).toMatchObject({ name: 'BBC News', group: 'News', channelNumber: 7 });
+    expect(ch[0]).toMatchObject({ name: 'BBC News', group: 'News', channelNumber: 7, logo: null });
     expect(ch[0].url).toBe('https://cdn.example.com/bbc.m3u8');
     expect(ch[1]).toMatchObject({ name: 'ESPN', group: 'Sports', channelNumber: 2 });
   });
@@ -80,7 +80,9 @@ https://x.example.com/live|User-Agent=UA1&edge-token=ABC
   });
 
   it('reads drmLicense tokens from the stream URL', () => {
-    const ch = parseM3u('#EXTM3U\n#EXTINF:-1,Tok\nhttps://x.example.com/a.mpd?drmLicense=abcdef1234567890:1234567890abcdef\n');
+    const ch = parseM3u(
+      '#EXTM3U\n#EXTINF:-1,Tok\nhttps://x.example.com/a.mpd?drmLicense=abcdef1234567890:1234567890abcdef\n',
+    );
     expect(ch[0].drm.clearKeys).toEqual({ abcdef1234567890: '1234567890abcdef' });
   });
 
@@ -105,5 +107,12 @@ https://x.example.com/a
   it('returns [] for garbage input', () => {
     expect(parseM3u('not a playlist')).toEqual([]);
     expect(parseM3u('')).toEqual([]);
+  });
+});
+
+describe('parseM3u logos', () => {
+  it('keeps tvg-logo', () => {
+    const ch = parseM3u('#EXTM3U\n#EXTINF:-1 tvg-logo="http://x/l.png" group-title="G",Logo TV\nhttp://x/s.m3u8\n');
+    expect(ch[0]).toMatchObject({ name: 'Logo TV', logo: 'http://x/l.png' });
   });
 });

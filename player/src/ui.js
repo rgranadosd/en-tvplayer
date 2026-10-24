@@ -1,6 +1,7 @@
 import { escapeHtml } from './utils.js';
 import { getHiddenGroups } from './config.js';
 import { filterDisplayChannels, slowHintFor, attemptSuffix } from './logic.js';
+import { isFavorite } from './favorites.js';
 
 let channels = [];
 let currentIndex = -1;
@@ -464,7 +465,8 @@ export function renderChannelList() {
       '</span>' +
       '<span class="channel-name"><span class="channel-name-text">' +
       escapeHtml(channel.name) +
-      '</span></span>';
+      '</span></span>' +
+      (isFavorite(channel) ? '<span class="channel-fav">&#9829;</span>' : '');
 
     item.addEventListener('click', () => {
       selectChannel(originalIndex);
@@ -1057,7 +1059,7 @@ function buildRightItems() {
     });
   }
   // Button IDs
-  const btnIds = ['refresh-stream-btn', 'refresh-channels-btn', 'settings-btn', 'proxy-toggle-btn'];
+  const btnIds = ['favorite-btn', 'refresh-stream-btn', 'refresh-channels-btn', 'settings-btn', 'proxy-toggle-btn'];
   btnIds.forEach((id) => {
     const el = document.getElementById(id);
     if (el && !el.classList.contains('hidden')) {
@@ -1186,6 +1188,10 @@ export function getCurrentChannel() {
     return channels[currentIndex];
   }
   return null;
+}
+
+export function getFocusedChannel() {
+  return getDisplayChannels()[focusedIndex] || null;
 }
 
 export function refreshChannelList(newChannels) {
@@ -1406,6 +1412,13 @@ export function setUpdateBadge(visible) {
 }
 
 /* Desktop test relay label (branch-only): Proxy (test): On/Off */
+export function setFavoriteLabel(on) {
+  const btn = document.getElementById('favorite-btn');
+  if (!btn) return;
+  btn.innerHTML = on ? '&#9829; Remove from Favorites' : '&#9825; Add to Favorites';
+  btn.classList.toggle('is-favorite', !!on);
+}
+
 export function setProxyToggleLabel(on) {
   const btn = document.getElementById('proxy-toggle-btn');
   if (btn) btn.textContent = 'Proxy (test): ' + (on ? 'On' : 'Off');

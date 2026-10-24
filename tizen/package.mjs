@@ -154,7 +154,7 @@ const configXml = `<?xml version="1.0" encoding="UTF-8"?>
 <widget xmlns:tizen="http://tizen.org/ns/widgets"
         xmlns="http://www.w3.org/ns/widgets"
         id="https://iptvplayer"
-        version="${APP_VERSION}"
+        version="${APP_VERSION.split('-')[0]}"
         viewmodes="maximized">
   <access origin="*" subdomains="true"/>
   <tizen:application id="${PKG}.IPTV" package="${PKG}" required_version="4.0"/>
@@ -162,7 +162,7 @@ const configXml = `<?xml version="1.0" encoding="UTF-8"?>
   <content src="index.html"/>
   <feature name="http://tizen.org/feature/screen.size.all"/>
   <icon src="icon.png"/>
-  <name>EN-IPTV Player v${APP_VERSION}</name>
+  <name>RAFLIX IPTV v${APP_VERSION}</name>
   <tizen:privilege name="http://tizen.org/privilege/internet"/>
   <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
   <tizen:profile name="tv-samsung"/>

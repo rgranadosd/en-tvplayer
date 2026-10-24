@@ -5,7 +5,14 @@ import * as remote from './remote.js';
 import * as settings from './settings.js';
 import { checkForUpdate, sendUsagePing, consentAsked, hasConsented, setConsented } from './update.js';
 import { fetchPlaylistEntry, fetchPlaylistWithRetry } from './utils.js';
-import { filterDisplayChannels, findResumeIndex, findIntentIndex, tuneSuperseded } from './logic.js';
+import {
+  filterDisplayChannels,
+  findResumeIndex,
+  findIntentIndex,
+  findRequestedIndex,
+  tuneSuperseded,
+} from './logic.js';
+import * as favorites from './favorites.js';
 
 let currentIndex = 0;
 let channels;
@@ -37,8 +44,8 @@ function getDisplayChannels() {
   return filterDisplayChannels(channels, getHiddenGroups(), selectedGroup);
 }
 
-const BOOT_TITLE = 'EN IPTV';
-const BOOT_TAGLINE = 'Smart IPTV Player for Samsung TV';
+const BOOT_TITLE = 'RAFLIX IPTV';
+const BOOT_TAGLINE = 'Forked from EN IPTV';
 const BOOT_TITLE_DELAY = 500;
 const BOOT_TITLE_CHAR = 90;
 const BOOT_TAGLINE_GAP = 200;
@@ -90,7 +97,7 @@ function showBootSplash(statusText) {
   startTypewriter(titleEl, BOOT_TITLE, BOOT_TITLE_CHAR, BOOT_TITLE_DELAY, () => {
     // Colorize "IPTV" once typing finishes, drop the caret.
     if (titleEl) {
-      titleEl.innerHTML = 'EN <span>IPTV</span>';
+      titleEl.innerHTML = 'RAFLIX <span>IPTV</span>';
       titleEl.classList.remove('typing');
     }
     startTypewriter(typeEl, BOOT_TAGLINE, BOOT_TAGLINE_CHAR, BOOT_TAGLINE_GAP);
@@ -149,271 +156,22 @@ function hideBootSplash(holdAfterTypeMs = 0, onDone = null) {
 
 const LAST_SEEN_KEY = 'en_last_seen_version';
 
+// RAFLIX IPTV's own history; EN IPTV's (what it was forked from) is in CHANGELOG.md.
 const CHANGELOG = [
   {
-    version: '3.2.0',
-    sections: [
-      {
-        type: 'fixed',
-        items: [
-          'Raw TS links play via the TV built-in player instead of looping',
-          'CORS-blocked relays fall back to native playback',
-          'Expired live segments re-sync instead of stopping playback',
-          'Clear messages for undecodable or over-quality channels',
-          'Expired links refetch a fresh URL instead of retrying forever',
-          'Dead channels stop with a message instead of freezing the app',
-          'Smoother auto quality on slow relays',
-          'Cleaner tune screen: one status line, instant cut on switch',
-          'Tip: if a channel misses after fast switching, select it again',
-          'Fast channel switching plays the final channel reliably',
-          'Stuck channels resume on their own; slow relays restart less',
-          'Channels start playing sooner',
-        ],
-      },
-    ],
-  },
-  {
-    version: '3.1.0',
-    sections: [
-      {
-        type: 'added',
-        items: ['Remembers your last group and channel — reopening the app replays what you were watching'],
-      },
-      {
-        type: 'fixed',
-        items: [
-          'Channel list focus stays visible while scrolling with the button held',
-          'Reload no longer strands you on the logo when stream links went stale — the last channel is retried with fresh links',
-        ],
-      },
-    ],
-  },
-  {
-    version: '3.0.4',
-    sections: [
-      {
-        type: 'fixed',
-        items: [
-          'Protected channels with cookie login (Star Plus HD and similar) play again — channel key loading fixed',
-        ],
-      },
-    ],
-  },
-  {
-    version: '3.0.3',
-    sections: [
-      { type: 'added', items: ['Audio track selection in the right sidebar for multi-audio channels'] },
-      { type: 'fixed', items: ['Cookie-protected channels (JioTV+ Business, Devotional) now play'] },
-    ],
-  },
-  {
-    version: '3.0.2',
-    sections: [
-      { type: 'added', items: ['Channel name under the center logo while buffering'] },
-      { type: 'changed', items: ['Single center logo — stacked logos impossible'] },
-      { type: 'fixed', items: ['Slow connects show progress instead of a bare logo'] },
-    ],
-  },
-  {
-    version: '3.0.1',
-    sections: [{ type: 'fixed', items: ['Buffering hints now show above the pill, larger and centered'] }],
-  },
-  {
-    version: '3.0.0',
+    version: '1.0.0-rc.1',
     sections: [
       {
         type: 'added',
         items: [
-          'Xtream login source with Test Login',
-          'First-run source picker for new installs',
-          'Channel Up/Down buttons switch to the next/previous channel',
+          'RAFLIX IPTV: new name and logo (forked from EN IPTV 3.2.0)',
+          'Favorites: Menu (→) › Add to Favorites, or the Red key',
+          'Favorite channels show a ♥ in the channel list',
+          'Favorites are shared with Raflix (Directos tab) through the favorites server',
+          'Opened from Raflix, the app tunes the chosen channel',
         ],
       },
     ],
-  },
-  {
-    version: '2.3.0',
-    sections: [
-      {
-        type: 'added',
-        items: [
-          'Provider-order channel listing by default, A–Z stays optional',
-          'Hide groups from Settings, cross-group channel search from the group list',
-        ],
-      },
-    ],
-  },
-  {
-    version: '2.2.0',
-    sections: [
-      {
-        type: 'added',
-        items: [
-          'Channel Source revamp: 3 playlists max, side-by-side cards with added and last-played dates',
-          'OK on a card loads it immediately, Left/Right moves across cards',
-          'TV keyboard opens from playlist inputs, fetch button relabeled Active',
-          'Display toggles: App logo and Quality badge can be shown or hidden',
-        ],
-      },
-      { type: 'fixed', items: ['Settings side-nav spacing, header to top, bigger white title'] },
-    ],
-  },
-  {
-    version: '2.1.0',
-    sections: [
-      {
-        type: 'added',
-        items: [
-          'Custom stream headers via #KODIPROP (User-Agent, Referer, Authorization)',
-          'Multi-key DRM decryption for protected channels',
-        ],
-      },
-      { type: 'fixed', items: ['Update checker now actually runs — opt in once, get notified of new versions'] },
-    ],
-  },
-  {
-    version: '2.0.0',
-    sections: [
-      {
-        type: 'added',
-        items: [
-          'Slide-in watermark once the sidebar hides',
-          'Stream type in the quality badge (e.g. M3U8, MPD)',
-          'Rounded rows and white focus rings everywhere',
-        ],
-      },
-      {
-        type: 'changed',
-        items: [
-          'New tune sequence: spinner + name, then bottom status pill',
-          'Deep lists scroll without jumping',
-          'Streamlined Settings, staged splash',
-        ],
-      },
-      { type: 'fixed', items: ['Playing row stays marked on reopen', 'Upstream blips no longer restart playback'] },
-    ],
-  },
-  {
-    version: '1.10.1',
-    sections: [
-      {
-        type: 'fixed',
-        items: [
-          'Empty fresh install no longer strands you on a dead page',
-          'Resolution badge always shows the true quality',
-          'Interlaced channels play via native fallback',
-          'Flaky relays recover instead of dying (fresh-token retries)',
-        ],
-      },
-      {
-        type: 'changed',
-        items: [
-          'Staged loading: spinner, first frame, then buffering',
-          'Channel + buffering toasts with wait hints',
-          'Boot logo flies toward you on launch',
-        ],
-      },
-    ],
-  },
-  {
-    version: '1.10.0',
-    sections: [
-      {
-        type: 'added',
-        items: [
-          'Optional update checker — opt in once, get notified of new versions',
-          'Contact and download stats refreshed',
-        ],
-      },
-    ],
-  },
-  {
-    version: '1.9.0',
-    sections: [
-      {
-        type: 'fixed',
-        items: [
-          'Tokenized live playlists now play without dropping after the first frame',
-          'Access-denied channels retry with a fresh link before giving up',
-          'Clearer messages when a live stream breaks up',
-        ],
-      },
-    ],
-  },
-  {
-    version: '1.8.0',
-    sections: [
-      {
-        type: 'fixed',
-        items: [
-          'Settings changes via remote now save — playlist edits and toggles stick',
-          'Enter inside Settings text boxes now saves on TV',
-          'Crashing channels retry automatically in compatibility mode',
-          'Unrecognized channel links are now identified and retried correctly',
-          'Channel error messages are now accurate (including access-denied detection)',
-        ],
-      },
-      { type: 'changed', items: ['Proxy hint position fixed to bottom center', 'Settings back button spacing fixed'] },
-    ],
-  },
-  {
-    version: '1.7.0',
-    sections: [
-      {
-        type: 'fixed',
-        items: [
-          'Black screen on some IPTV channels — now detects stream format automatically',
-          'HLS streams that need date-time sync now work correctly',
-          'Raw TS/MP4 stream URLs now play correctly on Samsung Tizen',
-          'Video errors from the TV are now caught and shown to you',
-          'Streams that will never work now fail in 15 seconds instead of 30',
-        ],
-      },
-      {
-        type: 'changed',
-        items: [
-          'All error messages are now in plain English — no more technical jargon',
-          'Better error hints (try Proxy, check internet, channel may be offline)',
-        ],
-      },
-    ],
-  },
-  {
-    version: '1.6.0',
-    sections: [
-      {
-        type: 'added',
-        items: [
-          'Boot splash with logo animation, typewriter tagline, and spinner',
-          'App version displayed on splash screen',
-          'What\u2019s New modal shown once after each update',
-          'Auto-refresh playlist on app launch — toggle in Settings → Playback',
-        ],
-      },
-      {
-        type: 'fixed',
-        items: [
-          'Fetch Active intermittent error during stream playback',
-          'Relay fallback now shows meaningful error messages',
-          'Fetch Active button disables during loading',
-        ],
-      },
-    ],
-  },
-  {
-    version: '1.5.0',
-    sections: [{ type: 'changed', items: ['Updated app logo with new design'] }],
-  },
-  {
-    version: '1.4.0',
-    sections: [
-      { type: 'added', items: ['Channel name auto-scroll for long names'] },
-      { type: 'fixed', items: ['Sidebar navigation and channel switching improvements'] },
-    ],
-  },
-  {
-    version: '1.3.0',
-    sections: [{ type: 'added', items: ['Responsive TV scaling for all screen sizes'] }],
   },
 ];
 
@@ -518,6 +276,22 @@ async function init() {
   // Update checker (from feature/update-check): opt-in prompt + background
   // version check. Was defined but never invoked — wire it at boot.
   scheduleUpdateCheck();
+
+  favorites.refreshFavorites().then(showFavoriteMarks);
+  // Opened again while running, by an app asking for a channel (Raflix's "Directos" tab).
+  window.addEventListener('appcontrol', () => {
+    const request = favorites.requestedChannel();
+    const playing = ui.getCurrentChannel();
+    if (!request || !channels || !channels.length) return;
+    if (playing && playing.name === request.name) return;
+    if (settings.isVisible()) {
+      settings.hide();
+      refreshProxyMenu();
+      showPlayer();
+    }
+    ui.closeAllOverlays();
+    openRequestedChannel(request);
+  });
 
   document.addEventListener('tizenhwkey', (e) => {
     if (e.keyName === 'back') {
@@ -731,6 +505,11 @@ function startPlayer() {
   // Off by default, so release users never see it.
   refreshProxyMenu();
 
+  const favoriteBtn = document.getElementById('favorite-btn');
+  if (favoriteBtn) {
+    addCleanupListener(favoriteBtn, 'click', () => toggleFavoriteFor(ui.getCurrentChannel()));
+  }
+
   let proxyToggleBtn = document.getElementById('proxy-toggle-btn');
   if (proxyToggleBtn) {
     addCleanupListener(proxyToggleBtn, 'click', () => {
@@ -819,6 +598,7 @@ function startPlayer() {
 // its group is now hidden. Identity is the channel URL (stable across
 // playlist refresh and re-sort); a raw index would rot on every fetch.
 function restoreLastSession() {
+  if (openRequestedChannel(favorites.requestedChannel())) return;
   let idx = 0;
   try {
     const s = getSettings();
@@ -840,6 +620,37 @@ function restoreLastSession() {
     }
   } catch {}
   ui.selectChannel(idx, true);
+}
+
+// A channel another app asked for (by name; URLs rotate), in its group's view.
+function openRequestedChannel(request) {
+  const at = findRequestedIndex(channels, request, getHiddenGroups());
+  if (at < 0) return false;
+  const g = channels[at].group || 'Ungrouped';
+  ui.showGroupChannels(ui.getGroups().some((x) => x.name === g) ? g : 'All Channels');
+  selectedGroup = ui.getSelectedGroup();
+  ui.selectChannel(at, true);
+  return true;
+}
+
+// Red key: the channel joins or leaves the favorites (kept by the favorites API).
+async function toggleFavoriteFor(channel) {
+  if (!channel) return;
+  if (!favorites.isConfigured()) {
+    ui.showTransientNotice('Favorites need the favorites server — see favorites/README.md');
+    return;
+  }
+  await favorites.refreshFavorites();
+  const on = await favorites.toggleFavorite(channel);
+  if (on === null) ui.showTransientNotice('Favorites server not reachable — try again');
+  else ui.showTransientNotice((on ? '♥ Added to favorites: ' : 'Removed from favorites: ') + channel.name, 2500);
+  showFavoriteMarks();
+}
+
+// The ♥ in the channel list and the Menu's Add/Remove label follow the favorites.
+function showFavoriteMarks() {
+  if (ui.getSidebarMode() === 'channels') ui.renderChannelList();
+  ui.setFavoriteLabel(favorites.isFavorite(ui.getCurrentChannel()));
 }
 
 function showEmptyState() {
@@ -1046,6 +857,7 @@ async function handleChannelSelect(channel) {
     saveSettings({ lastChannelUrl: channel.url, lastGroup: selectedGroup });
   } catch {}
   ui.setProxyToggleLabel(!!(getSettings().proxyChannels || {})[channel.url]);
+  ui.setFavoriteLabel(favorites.isFavorite(channel));
   const ok = await player.loadChannel(channel);
   tuneSucceeded = ok === true;
   if (!ok) {
@@ -1470,6 +1282,9 @@ function handleRemoteAction(action, value) {
         case 'reload':
           player.reloadChannel();
           break;
+        case 'red':
+          toggleFavoriteFor(ui.getFocusedChannel());
+          break;
         default:
           break;
       }
@@ -1525,7 +1340,7 @@ function handleRemoteAction(action, value) {
       ui.toggleSidebar();
       break;
     case 'red':
-      // Reserved for future use
+      toggleFavoriteFor(ui.getCurrentChannel());
       break;
     case 'green':
       if (!ui.isSidebarOpen()) {
