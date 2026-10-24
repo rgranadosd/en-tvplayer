@@ -44,10 +44,8 @@ describe('timedFetch', () => {
 
 describe('processStreamUrl', () => {
   it('passes plain URLs through', () => {
-    expect(processStreamUrl('https://x.example.com/a.m3u8')).toEqual({
-      url: 'https://x.example.com/a.m3u8',
-      extraHeaders: null,
-    });
+    expect(processStreamUrl('https://x.example.com/a.m3u8'))
+      .toEqual({ url: 'https://x.example.com/a.m3u8', extraHeaders: null });
   });
 
   it('splits pipe headers from the base URL', () => {
@@ -84,9 +82,7 @@ describe('extractAuthQuery', () => {
 describe('withAuthQuery', () => {
   it('appends missing params and skips present ones', () => {
     expect(withAuthQuery('https://h.example.com/a', '__hdnea__=T')).toBe('https://h.example.com/a?__hdnea__=T');
-    expect(withAuthQuery('https://h.example.com/a?__hdnea__=T', '__hdnea__=T')).toBe(
-      'https://h.example.com/a?__hdnea__=T',
-    );
+    expect(withAuthQuery('https://h.example.com/a?__hdnea__=T', '__hdnea__=T')).toBe('https://h.example.com/a?__hdnea__=T');
   });
 
   it('leaves non-network URIs (e.g. data: licenses) untouched', () => {
@@ -132,35 +128,32 @@ describe('fetchPlaylist / fetchPlaylistWithRetry', () => {
   let base;
   let flakyHits = 0;
 
-  beforeAll(
-    () =>
-      new Promise((resolve) => {
-        server = http.createServer((req, res) => {
-          if (req.url === '/list.m3u') {
-            res.setHeader('content-type', 'application/x-mpegURL');
-            res.end('#EXTM3U\n#EXTINF:-1,Srv\nhttps://x.example.com/a\n');
-          } else if (req.url === '/flaky.m3u') {
-            flakyHits++;
-            if (flakyHits === 1) {
-              res.statusCode = 500;
-              res.end('boom');
-            } else {
-              res.end('#EXTM3U\n#EXTINF:-1,Flaky\nhttps://x.example.com/f\n');
-            }
-          } else if (req.url === '/json') {
-            res.setHeader('content-type', 'application/json');
-            res.end(JSON.stringify([{ name: 'J', url: 'https://x.example.com/j' }]));
-          } else {
-            res.statusCode = 500;
-            res.end('down');
-          }
-        });
-        server.listen(0, '127.0.0.1', () => {
-          base = 'http://127.0.0.1:' + server.address().port;
-          resolve();
-        });
-      }),
-  );
+  beforeAll(() => new Promise((resolve) => {
+    server = http.createServer((req, res) => {
+      if (req.url === '/list.m3u') {
+        res.setHeader('content-type', 'application/x-mpegURL');
+        res.end('#EXTM3U\n#EXTINF:-1,Srv\nhttps://x.example.com/a\n');
+      } else if (req.url === '/flaky.m3u') {
+        flakyHits++;
+        if (flakyHits === 1) {
+          res.statusCode = 500;
+          res.end('boom');
+        } else {
+          res.end('#EXTM3U\n#EXTINF:-1,Flaky\nhttps://x.example.com/f\n');
+        }
+      } else if (req.url === '/json') {
+        res.setHeader('content-type', 'application/json');
+        res.end(JSON.stringify([{ name: 'J', url: 'https://x.example.com/j' }]));
+      } else {
+        res.statusCode = 500;
+        res.end('down');
+      }
+    });
+    server.listen(0, '127.0.0.1', () => {
+      base = 'http://127.0.0.1:' + server.address().port;
+      resolve();
+    });
+  }));
 
   afterAll(() => new Promise((resolve) => server.close(resolve)));
 
