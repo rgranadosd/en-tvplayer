@@ -20,6 +20,9 @@ tizen/author-key.pem
 # Local test builds (never committed)
 beta/
 
+# Extra playlists for local builds: their URLs can carry logins
+player/playlists.local.json
+
 # Stable folder (build output)
 stable/
 

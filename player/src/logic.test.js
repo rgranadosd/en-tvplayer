@@ -17,6 +17,7 @@ import {
   slowHintFor,
   attemptSuffix,
   stallPatienceExceeded,
+  playlistsToAdd,
 } from './logic.js';
 
 const CHANNELS = [
@@ -232,5 +233,27 @@ describe('stallPatienceExceeded', () => {
     expect([0, 1, 2, 3].map((d) => stallPatienceExceeded(d))).toEqual([false, false, false, false]);
     expect(stallPatienceExceeded(4)).toBe(true);
     expect(stallPatienceExceeded(99)).toBe(true);
+  });
+});
+
+describe('playlistsToAdd', () => {
+  const tdt = { name: 'TDT', url: 'https://tdt/tv.m3u8' };
+  const two = { name: 'Two', url: 'http://two/list' };
+
+  it('adds the build-time playlists the saved ones lack', () => {
+    expect(playlistsToAdd([tdt], [two], [])).toEqual([two]);
+  });
+
+  it('skips the ones already saved, by URL', () => {
+    expect(playlistsToAdd([tdt, { ...two, name: 'Renamed' }], [two], [])).toEqual([]);
+  });
+
+  it('never brings back one added before and then deleted', () => {
+    expect(playlistsToAdd([tdt], [two], [two.url])).toEqual([]);
+  });
+
+  it('copes with missing lists', () => {
+    expect(playlistsToAdd(undefined, undefined, undefined)).toEqual([]);
+    expect(playlistsToAdd([tdt], [{ name: 'No URL' }], [])).toEqual([]);
   });
 });

@@ -152,3 +152,12 @@ export function slowHintFor(elapsedMs) {
 export function attemptSuffix(attempt) {
   return attempt > 1 ? ' • try ' + attempt : '';
 }
+
+// Build-time playlists (player/playlists.local.json) to add to the saved ones:
+// those not saved yet (by URL), and never one added before — deleted on the TV,
+// it stays deleted.
+export function playlistsToAdd(saved, extra, alreadyAdded) {
+  const urls = (saved || []).map((p) => p && p.url);
+  const added = alreadyAdded || [];
+  return (extra || []).filter((p) => p && p.url && !urls.includes(p.url) && !added.includes(p.url));
+}

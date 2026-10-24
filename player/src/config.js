@@ -1,3 +1,5 @@
+import { playlistsToAdd } from './logic.js';
+
 const SETTINGS_KEY = 'en_settings';
 const DEFAULT_PLAYLIST = {
   name: 'TDTChannels España',
@@ -63,6 +65,19 @@ export function getSettings() {
           localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
         } catch {}
       }
+    }
+    // Playlists from player/playlists.local.json (kept out of git: their URLs can carry logins), added once each.
+    const extra = playlistsToAdd(s.playlists, __EXTRA_PLAYLISTS__, s.extraPlaylistsAdded);
+    if (extra.length) {
+      const now = new Date().toISOString();
+      s.playlists = [
+        ...(s.playlists || []),
+        ...extra.map((p) => ({ type: 'm3u', ...p, addedAt: now, lastPlayedAt: null })),
+      ];
+      s.extraPlaylistsAdded = [...(s.extraPlaylistsAdded || []), ...extra.map((p) => p.url)];
+      try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+      } catch {}
     }
     return s;
   } catch {

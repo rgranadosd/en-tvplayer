@@ -5,6 +5,13 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// Extra playlists for this build, from player/playlists.local.json (not in git: their URLs can carry logins):
+// [{"name": "…", "url": "…"}]. Without the file, none.
+function getExtraPlaylists() {
+  const file = path.resolve(__dirname, 'playlists.local.json');
+  return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf-8')) : [];
+}
+
 function getAppVersion() {
   const rootPkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'package.json'), 'utf-8'));
   return rootPkg.version || '0.0.0';
@@ -13,6 +20,7 @@ function getAppVersion() {
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(getAppVersion()),
+    __EXTRA_PLAYLISTS__: JSON.stringify(getExtraPlaylists()),
   },
   root: '.',
   base: '/enplayer/',
@@ -46,9 +54,7 @@ export default defineConfig({
       name: 'tizen-html-transform',
       closeBundle() {
         const html = fs.readFileSync(path.resolve(__dirname, 'dist/index.html'), 'utf-8');
-        const fixed = html
-          .replace(/\s+type="module"/g, '')
-          .replace(/\s+crossorigin/g, '');
+        const fixed = html.replace(/\s+type="module"/g, '').replace(/\s+crossorigin/g, '');
         fs.writeFileSync(path.resolve(__dirname, 'dist/index.html'), fixed);
       },
     },
