@@ -31,7 +31,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     minify: 'esbuild',
-    target: 'es2015',
+    target: 'chrome56',
     modulePreload: false,
     rollupOptions: {
       output: {

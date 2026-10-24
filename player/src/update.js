@@ -3,6 +3,7 @@
 // Version metadata comes from a static file on jsDelivr, so no server is
 // required. See docs/TELEMETRY.md for the optional ping endpoint.
 import { APP_VERSION, getSettings, saveSettings } from './config.js';
+import { timedFetch } from './utils.js';
 
 const VERSION_URL = 'https://cdn.jsdelivr.net/gh/Nur-allhi/en-tvplayer@main/version.json';
 // Deploy the worker in docs/TELEMETRY.md and paste its URL here to enable
@@ -66,13 +67,8 @@ export async function checkForUpdate() {
     return compareVersions(cached.latest, APP_VERSION) > 0 ? cached : null;
   }
   try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 8000);
-    const resp = await fetch(VERSION_URL + '?_t=' + Date.now(), {
-      signal: ctrl.signal,
-      cache: 'no-store',
-    });
-    clearTimeout(timer);
+    const request = timedFetch(VERSION_URL + '?_t=' + Date.now(), { cache: 'no-store' }, 8000);
+    const resp = await request.promise;
     if (!resp.ok) return null;
     const data = await resp.json();
     if (!data || typeof data.version !== 'string') return null;

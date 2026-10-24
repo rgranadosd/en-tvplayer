@@ -9,7 +9,7 @@ tizen/temp-wgt/
 tizen/*.p12
 tizen/*.p12
 tizen/*.pem
-tizen/unsigned.zip
+tizen/unsigned.*
 tizen/author-cert.pem
 tizen/author-key.pem
 

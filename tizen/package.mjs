@@ -1,5 +1,6 @@
 import { execSync } from 'child_process';
 import { existsSync, mkdirSync, cpSync, readFileSync, writeFileSync, rmSync, renameSync } from 'fs';
+import { homedir } from 'os';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -38,7 +39,23 @@ function findOpenSSL() {
   return null;
 }
 
+function findTizenCLI() {
+  const candidates = [
+    process.env.TIZEN_CLI,
+    join(homedir(), 'tizen-studio', 'tools', 'ide', 'bin', 'tizen'),
+    'tizen',
+  ].filter(Boolean);
+  for (const cmd of candidates) {
+    try {
+      execSync(`"${cmd}" version`, { stdio: 'pipe' });
+      return cmd;
+    } catch {}
+  }
+  return null;
+}
+
 function findSDB() {
+  if (process.platform !== 'win32') return null;
   const candidates = [
     'TizenSdb_v1.1.0.exe',
     '"C:\\Program Files\\TizenSDB\\TizenSdb_v1.1.0.exe"',
@@ -57,11 +74,22 @@ function findSDB() {
   return null;
 }
 
+function findPython() {
+  const candidates = ['python3', 'python', 'py -3'];
+  for (const cmd of candidates) {
+    try {
+      execSync(`${cmd} --version`, { stdio: 'pipe' });
+      return cmd;
+    } catch {}
+  }
+  return null;
+}
+
 // ─── Step 1: Verify prerequisites ────────────────────────────────────────
 
-const OPENSSL = findOpenSSL();
-if (!OPENSSL) {
-  console.log('\n OpenSSL not found.\n  winget install OpenSSL.OpenSSL\n');
+const PYTHON = findPython();
+if (!PYTHON) {
+  console.log('\n Python 3 not found. Install Python 3 and try again.\n');
   process.exit(1);
 }
 
@@ -70,7 +98,16 @@ if (!SDB) {
   console.log('\n TizenSdb not found — skipping SDB check (packaging only)\n');
 }
 
-console.log(` OpenSSL: ${OPENSSL}`);
+const SIGNING_PROFILE = process.env.TIZEN_CERT_PROFILE;
+const TIZEN_CLI = SIGNING_PROFILE && findTizenCLI();
+const OPENSSL = TIZEN_CLI ? null : findOpenSSL();
+if (!TIZEN_CLI && !OPENSSL) {
+  console.log('\n Neither the Tizen CLI nor OpenSSL was found.\n');
+  process.exit(1);
+}
+
+console.log(` Signer: ${TIZEN_CLI ? `Tizen profile "${SIGNING_PROFILE}"` : OPENSSL}`);
+console.log(` Python: ${PYTHON}`);
 console.log(` SDB: ${SDB}`);
 
 // ─── Step 2: Ensure dist/ exists ─────────────────────────────────────────
@@ -85,7 +122,7 @@ if (!existsSync(DIST)) {
 const KEY_FILE = join(TIZEN, 'author-key.pem');
 const CERT_FILE = join(TIZEN, 'author-cert.pem');
 
-if (!existsSync(KEY_FILE) || !existsSync(CERT_FILE)) {
+if (!TIZEN_CLI && (!existsSync(KEY_FILE) || !existsSync(CERT_FILE))) {
   console.log('\n Generating developer certificate...');
   execSync(`${OPENSSL} genrsa -out "${KEY_FILE}" 2048`, { stdio: 'inherit' });
   execSync(
@@ -93,7 +130,7 @@ if (!existsSync(KEY_FILE) || !existsSync(CERT_FILE)) {
     `-days 36500 -subj "/CN=IPTVPlayer/O=Self/OU=Personal"`,
     { stdio: 'inherit' }
   );
-} else {
+} else if (!TIZEN_CLI) {
   console.log(' Certificate found');
 }
 
@@ -101,7 +138,7 @@ if (!existsSync(KEY_FILE) || !existsSync(CERT_FILE)) {
 
 const TEMP = join(TIZEN, 'temp-wgt');
 const OUTPUT = join(OUTPUT_DIR, WGT_NAME);
-const UNSIGNED = join(TIZEN, 'unsigned.zip');
+const UNSIGNED = join(TIZEN, 'unsigned.wgt');
 
 for (const p of [TEMP, OUTPUT]) {
   if (existsSync(p)) rmSync(p, { recursive: true, force: true });
@@ -120,7 +157,7 @@ const configXml = `<?xml version="1.0" encoding="UTF-8"?>
         version="${APP_VERSION}"
         viewmodes="maximized">
   <access origin="*" subdomains="true"/>
-  <tizen:application id="${PKG}.IPTV" package="${PKG}" required_version="5.0"/>
+  <tizen:application id="${PKG}.IPTV" package="${PKG}" required_version="4.0"/>
   <author href="http://iptvplayer">EN-IPTV Player</author>
   <content src="index.html"/>
   <feature name="http://tizen.org/feature/screen.size.all"/>
@@ -152,7 +189,7 @@ cpSync(join(TIZEN, 'icon.png'), join(TEMP, 'icon.png'));
 
 // Create unsigned ZIP via Python helper
 const ZIP_HELPER = join(TIZEN, 'ziphelper.py');
-execSync(`python "${ZIP_HELPER}" unsigned "${TEMP}" "${UNSIGNED}"`, { stdio: 'inherit' });
+execSync(`${PYTHON} "${ZIP_HELPER}" unsigned "${TEMP}" "${UNSIGNED}"`, { stdio: 'inherit' });
 
 if (!existsSync(UNSIGNED)) {
   console.log(' Failed to create unsigned package');
@@ -161,15 +198,25 @@ if (!existsSync(UNSIGNED)) {
 
 // Sign
 console.log(' Signing...');
-const SIG_FILE = join(TEMP, 'signature.xml');
-execSync(
-  `${OPENSSL} smime -sign -signer "${CERT_FILE}" -inkey "${KEY_FILE}" ` +
-  `-outform DER -binary -in "${UNSIGNED}" -out "${SIG_FILE}"`,
+if (TIZEN_CLI) {
+  execSync(
+  `"${TIZEN_CLI}" package -t wgt -s "${SIGNING_PROFILE}" -o "${OUTPUT_DIR}" -- "${UNSIGNED}"`,
   { stdio: 'inherit' }
-);
+  );
+  renameSync(join(OUTPUT_DIR, 'unsigned.wgt'), OUTPUT);
+} else {
+  const SIG_FILE = join(TEMP, 'signature.xml');
+  execSync(
+  `${OPENSSL} smime -sign -signer "${CERT_FILE}" -inkey "${KEY_FILE}" ` +
+    `-outform DER -binary -in "${UNSIGNED}" -out "${SIG_FILE}"`,
+  { stdio: 'inherit' }
+  );
 
-// Create signed ZIP with signature.xml LAST
-execSync(`python "${ZIP_HELPER}" signed "${TEMP}" "${OUTPUT}" "${SIG_FILE}"`, { stdio: 'inherit' });
+  // Create signed ZIP with signature.xml LAST
+  execSync(`${PYTHON} "${ZIP_HELPER}" signed "${TEMP}" "${OUTPUT}" "${SIG_FILE}"`, {
+  stdio: 'inherit',
+  });
+}
 
 rmSync(TEMP, { recursive: true, force: true });
 rmSync(UNSIGNED, { force: true });

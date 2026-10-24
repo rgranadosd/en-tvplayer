@@ -6,12 +6,14 @@
   "scripts": {
     "dev": "npm run dev -w player",
     "build": "npm run build -w player",
+    "check:tizen4": "node scripts/check-tizen4.mjs",
     "test": "npm run test -w player",
     "lint": "eslint player/src scripts",
     "format": "prettier --write player/src scripts",
     "format:check": "prettier --check player/src scripts",
     "release": "node scripts/release.mjs",
     "tizen": "cd tizen && node package.mjs",
+    "tizen:install": "python3 tizen/install.py",
     "proxy": "npm start -w proxy",
     "prepare": "husky"
   },

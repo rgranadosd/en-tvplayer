@@ -1,10 +1,15 @@
 const SETTINGS_KEY = 'en_settings';
+const DEFAULT_PLAYLIST = {
+  name: 'TDTChannels España',
+  type: 'm3u',
+  url: 'https://www.tdtchannels.com/lists/tv.m3u8',
+};
 
 export const APP_VERSION = __APP_VERSION__;
 
 const settingsDefaults = {
-  playlists: [],
-  activePlaylistIndex: -1,
+  playlists: [DEFAULT_PLAYLIST],
+  activePlaylistIndex: 0,
   channels: [],
   channelsFetched: null,
   autoQuality: true,
@@ -27,7 +32,7 @@ const settingsDefaults = {
 export function getSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    const defaults = { ...settingsDefaults, playlists: [] };
+    const defaults = { ...settingsDefaults, playlists: [{ ...DEFAULT_PLAYLIST }] };
     const s = raw ? { ...defaults, ...JSON.parse(raw) } : { ...defaults };
     // Migration from legacy single playlistUrl
     if ((!s.playlists || s.playlists.length === 0) && s.playlistUrl) {
@@ -61,7 +66,7 @@ export function getSettings() {
     }
     return s;
   } catch {
-    return { ...settingsDefaults, playlists: [] };
+    return { ...settingsDefaults, playlists: [{ ...DEFAULT_PLAYLIST }] };
   }
 }
 export function getActivePlaylist() {

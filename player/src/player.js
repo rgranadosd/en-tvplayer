@@ -1,6 +1,6 @@
 import shaka from 'shaka-player';
 import config, { getSettings } from './config.js';
-import { withAuthQuery, redactUrl } from './utils.js';
+import { withAuthQuery, redactUrl, timedFetch } from './utils.js';
 import {
   segment404Decision,
   lastResortDecision,
@@ -437,14 +437,12 @@ function isNativeLoadCrash(error) {
 // Returns null when the format cannot be determined.
 async function probeChannelFormat(channel) {
   if (!channel) return null;
-  const controller = new AbortController();
-  probeController = controller;
+  let request = null;
   try {
     const authedUrl = withAuthQuery(channel.url, channel.authQuery);
     const targetUrl = channel.useProxy ? toProxied(authedUrl) : authedUrl;
     if (!targetUrl) return null;
 
-    const timer = setTimeout(() => controller.abort(), 8000);
     const headers = {};
     if (channel.userAgent) headers['User-Agent'] = channel.userAgent;
     if (channel.customHeaders) {
@@ -457,15 +455,11 @@ async function probeChannelFormat(channel) {
       }
     }
 
-    const resp = await fetch(targetUrl, { headers, signal: controller.signal });
-    if (!resp.ok) {
-      clearTimeout(timer);
-      return null;
-    }
-    if (!resp.body || typeof resp.body.getReader !== 'function') {
-      clearTimeout(timer);
-      return null;
-    }
+    request = timedFetch(targetUrl, { headers }, 8000);
+    probeController = request;
+    const resp = await request.promise;
+    if (!resp.ok) return null;
+    if (!resp.body || typeof resp.body.getReader !== 'function') return null;
 
     const reader = resp.body.getReader();
     let bytes = new Uint8Array(0);
@@ -483,8 +477,6 @@ async function probeChannelFormat(channel) {
     try {
       await reader.cancel();
     } catch {}
-    clearTimeout(timer);
-    if (probeController === controller) probeController = null;
     if (bytes.length < 8) return null;
 
     // MP4: ftyp box at offset 4.
@@ -493,7 +485,7 @@ async function probeChannelFormat(channel) {
 
     // Text-based manifests: HLS (#EXTM3U / #EXT-X-...) and DASH (<MPD).
     const head = new TextDecoder().decode(bytes.subarray(0, Math.min(bytes.length, 8192)));
-    const trimmed = head.trimStart();
+    const trimmed = head.replace(/^\s+/, '');
     if (trimmed.startsWith('#EXTM3U') || head.includes('#EXT-X-')) {
       return 'application/vnd.apple.mpegurl'; // force Shaka's HLS parser
     }
@@ -514,9 +506,10 @@ async function probeChannelFormat(channel) {
     }
     return null;
   } catch (e) {
-    if (probeController === controller) probeController = null;
     logEvent('WARN', 'Format probe failed: ' + (e && e.message ? e.message : e));
     return null;
+  } finally {
+    if (probeController === request) probeController = null;
   }
 }
 
