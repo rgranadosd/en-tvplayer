@@ -332,6 +332,22 @@ async function init() {
 
   remote.init(handleRemoteAction);
   document.addEventListener('keydown', ui.flashNowPlaying, true);
+  // Hidden (Exit, Home): stop the stream. AVPlay keeps painting its video under a hidden app, so Exit looked like
+  // it did nothing and took a second press; and the channel server serves one stream at a time. Back: the same
+  // channel again, unless something was tuned meanwhile (Raflix asking for another one through appcontrol).
+  let hiddenAtSeq = -1;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      hiddenAtSeq = tuneSeq;
+      player.stop();
+      return;
+    }
+    const seq = hiddenAtSeq;
+    hiddenAtSeq = -1;
+    setTimeout(() => {
+      if (seq >= 0 && tuneSeq === seq && ui.getCurrentChannel()) player.reloadChannel();
+    }, 500);
+  });
   if (diagEnabled) {
     // Exit on 2016 TVs needs two presses: what the app sees of each.
     document.addEventListener('visibilitychange', () => diag('visible=' + !document.hidden));
@@ -682,6 +698,7 @@ function startPlayer() {
     showEmptyState();
     return;
   }
+  diag('start: ready to resume ' + (Date.now() - tStart) + 'ms after settings');
   restoreLastSession();
 }
 
@@ -691,6 +708,7 @@ function startPlayer() {
 // playlist refresh and re-sort); a raw index would rot on every fetch.
 function restoreLastSession() {
   if (openRequestedChannel(favorites.requestedChannel())) return;
+  const t0 = Date.now();
   let idx = 0;
   try {
     const s = getSettings();
@@ -711,6 +729,7 @@ function restoreLastSession() {
       selectedGroup = ui.getSelectedGroup();
     }
   } catch {}
+  diag('resume: last channel and its group view ' + (Date.now() - t0) + 'ms');
   ui.selectChannel(idx, true);
 }
 
