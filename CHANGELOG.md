@@ -20,6 +20,9 @@ All notable changes to RAFLIX IPTV (forked from EN TV Player) will be documented
   loader outcome, app milestones, AVPlay results); nothing ships without the file.
 - `eslint-plugin-compat` on the legacy sources (Safari 7-era APIs) and `check:tizen24` resolving the packaged paths.
 - `tizen/install.py --no-launch` (install without opening the app) and `--uninstall`.
+- Which package and engine: the splash shows "v1.0.0 · Tizen 4+" or "· Tizen 2.4", the now-playing bar the engine
+  playing the channel ("TS · AVPlay", "M3U8 · Shaka"; it follows a switch to AVPlay), and Settings › About the
+  package ("Tizen 4+ · Shaka + AVPlay" / "Tizen 2.4 · AVPlay only") and the engine playing now.
 - A channel asked for by Raflix tunes with a freshly downloaded playlist (stream URLs rotate, event groups change),
   whether the app was closed or running; the cached list only when the download fails.
 

@@ -77,7 +77,7 @@ function showBootSplash(statusText, always = false) {
   if (!el || (quietBoot && !always)) return;
   hideLaunchSpinner();
   if (statusEl && statusText) statusEl.textContent = statusText;
-  if (verEl) verEl.textContent = 'v' + APP_VERSION;
+  if (verEl) verEl.textContent = 'v' + APP_VERSION + ' · ' + player.packageLabel().split(' · ')[0];
   // Reset animation state
   const titleEl = document.getElementById('boot-logo-text');
   if (titleEl) {
@@ -640,6 +640,7 @@ function startPlayer() {
   player.onTokenExpired((deadChannel) => {
     handleStaleToken(deadChannel);
   });
+  player.onEngineChange((engine) => ui.setEngineTag(engine));
 
   if (channels.length === 0) {
     showEmptyState();
@@ -919,6 +920,7 @@ async function handleChannelSelect(channel) {
   ui.setFavoriteLabel(favorites.isFavorite(channel));
   const ok = await player.loadChannel(channel);
   tuneSucceeded = ok === true;
+  if (mySeq === tuneSeq) ui.setEngineTag(ok ? player.engineInUse() : null);
   if (!ok) {
     hideProgress();
     ui.hideBuffering();

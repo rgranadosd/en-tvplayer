@@ -537,6 +537,14 @@ export function selectChannel(index, skipFullscreen) {
   }
 }
 
+/** Appends the engine playing the channel to the format tag in the now-playing bar ("TS · AVPlay"). */
+export function setEngineTag(engine) {
+  const infoEl = document.getElementById('channel-info');
+  if (!infoEl) return;
+  const format = infoEl.textContent.split(' · ')[0];
+  infoEl.textContent = engine ? format + ' · ' + engine : format;
+}
+
 export function navigateUp() {
   const displayChannels = getDisplayChannels();
   if (displayChannels.length === 0) return;

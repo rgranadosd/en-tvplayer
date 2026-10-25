@@ -381,6 +381,12 @@ export function onTuneAttempt(callback) {
   tuneAttemptCallback = callback;
 }
 
+// A channel that started on Shaka and moved to AVPlay (no frames painted): the UI's engine tag follows.
+let engineCallback = null;
+export function onEngineChange(callback) {
+  engineCallback = callback;
+}
+
 function notifyTuneAttempt() {
   try {
     if (tuneAttemptCallback) tuneAttemptCallback(tuneAttempt);
@@ -1381,6 +1387,7 @@ async function loadViaAvplay(channel, myToken) {
     return false;
   }
   useAvplay = true;
+  if (engineCallback) engineCallback('AVPlay');
   hideError();
   reconnectAttempts = 0;
   consecutiveErrors = 0;
@@ -1472,6 +1479,17 @@ export function togglePlay() {
 
 export function engineName() {
   return 'Shaka Player';
+}
+
+/** The package: Tizen 4+ (Shaka, AVPlay for direct media) or Tizen 2.4 (AVPlay only). */
+export function packageLabel() {
+  return 'Tizen 4+ · Shaka + AVPlay';
+}
+
+/** What plays the current channel: 'AVPlay', 'Shaka', or null before the first tune. */
+export function engineInUse() {
+  if (useAvplay) return 'AVPlay';
+  return player && currentChannel ? 'Shaka' : null;
 }
 
 export function isNativeAvailable() {

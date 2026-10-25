@@ -41,9 +41,10 @@ export function onTokenExpired(callback) {
   tokenExpiredCallback = callback;
 }
 
-// Shaka-only events: nothing to report natively.
+// Shaka-only events: nothing to report natively (the engine never changes here).
 export function onTrackChange() {}
 export function onChannelAdvance() {}
+export function onEngineChange() {}
 
 function referer(channel) {
   for (const k of Object.keys(channel.customHeaders || {})) {
@@ -153,6 +154,14 @@ export function getBufferingPercent() {
 
 export function engineName() {
   return 'Samsung AVPlay';
+}
+
+export function packageLabel() {
+  return 'Tizen 2.4 · AVPlay only';
+}
+
+export function engineInUse() {
+  return currentChannel ? 'AVPlay' : null;
 }
 
 export function isNativeAvailable() {
