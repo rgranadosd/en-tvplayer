@@ -169,6 +169,15 @@ const LAST_SEEN_KEY = 'en_last_seen_version';
 // RAFLIX IPTV's own history; EN IPTV's (what it was forked from) is in CHANGELOG.md.
 const CHANGELOG = [
   {
+    version: '1.0.0-rc.3',
+    sections: [
+      {
+        type: 'added',
+        items: ["What's on now on your favorites, in Raflix's Directos tab (from the playlist's guide)"],
+      },
+    ],
+  },
+  {
     version: '1.0.0-rc.2',
     sections: [
       {
@@ -299,7 +308,10 @@ async function init() {
   // version check. Was defined but never invoked — wire it at boot.
   scheduleUpdateCheck();
 
-  favorites.refreshFavorites().then(showFavoriteMarks);
+  favorites.refreshFavorites().then(() => {
+    showFavoriteMarks();
+    favorites.completeGuideIds(channels);
+  });
   // Opened again while running, by an app asking for a channel (Raflix's "Directos" tab).
   window.addEventListener('appcontrol', () => {
     const request = favorites.requestedChannel();
@@ -663,7 +675,7 @@ async function toggleFavoriteFor(channel) {
     return;
   }
   await favorites.refreshFavorites();
-  const on = await favorites.toggleFavorite(channel);
+  const on = await favorites.toggleFavorite(channel, channels);
   if (on === null) ui.showTransientNotice('Favorites server not reachable — try again');
   else ui.showTransientNotice((on ? '♥ Added to favorites: ' : 'Removed from favorites: ') + channel.name, 2500);
   showFavoriteMarks();

@@ -45,6 +45,16 @@ export function findRequestedIndex(channels, request, hiddenGroups) {
   return exact >= 0 ? exact : list.findIndex(usable);
 }
 
+// A channel's guide ids (tvg-id) for the favorites' EPG: those of every channel with its name, since a playlist can
+// carry the same channel several times (event groups) and only some copies have a guide.
+export function guideIds(channels, name) {
+  const ids = [];
+  for (const ch of channels || []) {
+    if (ch && ch.name === name && ch.tvgId && !ids.includes(ch.tvgId)) ids.push(ch.tvgId);
+  }
+  return ids;
+}
+
 // Live-segment-404 reload budget: 3 edge re-syncs per URL inside a
 // 5-minute window, then the link is condemned. Pure version of the
 // player.js segment404* state machine — pass the stored state in, get

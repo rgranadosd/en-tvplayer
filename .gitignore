@@ -27,6 +27,7 @@ player/playlists.local.json
 player/favorites.local.json
 favorites/favorites.yml
 favorites/data/
+favorites/.env
 favorites/favorites.yml.tmp
 
 # Stable folder (build output)

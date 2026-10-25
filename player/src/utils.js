@@ -263,6 +263,7 @@ export function parseM3u(text) {
       const attrPart = sepIdx >= 0 ? line.slice(0, sepIdx) : line;
       const groupMatch = attrPart.match(/\bgroup-title="([^"]*)"/);
       const logoMatch = attrPart.match(/\btvg-logo="([^"]*)"/);
+      const tvgIdMatch = attrPart.match(/\btvg-id="([^"]*)"/);
       const chnoMatch = attrPart.match(/\btvg-chno="([^"]*)"/) || attrPart.match(/\bchannel-number="([^"]*)"/);
       let drm = null;
       let userAgent = null;
@@ -332,6 +333,7 @@ export function parseM3u(text) {
           authQuery: extractAuthQuery(customHeaders),
           group: groupMatch ? groupMatch[1] : null,
           logo: logoMatch ? logoMatch[1] : null,
+          tvgId: tvgIdMatch && tvgIdMatch[1] ? tvgIdMatch[1] : null,
         };
         result.push(ch);
         index++;

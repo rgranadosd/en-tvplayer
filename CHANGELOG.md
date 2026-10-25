@@ -2,6 +2,14 @@
 
 All notable changes to RAFLIX IPTV (forked from EN TV Player) will be documented in this file.
 
+## [1.0.0-rc.3] - 2026-10-25
+
+### Added
+- EPG for favorites: the favorites API reads the playlist's XMLTV guide (`EPG_URL`, the `url-tvg`) every 30 minutes and adds what's on now and next to each favorite; Raflix's Directos cards show it with a progress bar.
+- Favorites carry their guide ids (`tvg`: every `tvg-id` the channel has in the playlist, since event groups repeat channels under ids without a guide); favorites saved before get them filled in at start.
+- Channels keep their `tvg-id`.
+- The favorites API deploys from a clone of the repo (`favorites/docker-compose.yml`), with `EPG_URL` in a `.env` out of git.
+
 ## [1.0.0-rc.2] - 2026-10-25
 
 ### Changed

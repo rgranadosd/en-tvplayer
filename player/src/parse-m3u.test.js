@@ -112,7 +112,9 @@ https://x.example.com/a
 
 describe('parseM3u logos', () => {
   it('keeps tvg-logo', () => {
-    const ch = parseM3u('#EXTM3U\n#EXTINF:-1 tvg-logo="http://x/l.png" group-title="G",Logo TV\nhttp://x/s.m3u8\n');
-    expect(ch[0]).toMatchObject({ name: 'Logo TV', logo: 'http://x/l.png' });
+    const ch = parseM3u(
+      '#EXTM3U\n#EXTINF:-1 tvg-id="es.tv1" tvg-logo="http://x/l.png" group-title="G",Logo TV\nhttp://x/s.m3u8\n',
+    );
+    expect(ch[0]).toMatchObject({ name: 'Logo TV', logo: 'http://x/l.png', tvgId: 'es.tv1' });
   });
 });

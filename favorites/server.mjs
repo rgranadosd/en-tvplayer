@@ -2,17 +2,22 @@
 // read them. Plain HTTP, no dependencies; the list lives in a small YAML file next to this script.
 //
 //   node favorites/server.mjs [port] [file]          (defaults: 5002, favorites/favorites.yml)
+//   EPG_URL=<the playlist's url-tvg>                 (optional: adds what's on now and next)
 //
-//   GET    /favorites                       → {"favorites": [{name, group, logo}, …]}
-//   POST   /favorites  {name, group, logo}  → adds one (or updates it, by name)
-//   DELETE /favorites?name=…                → removes one
+//   GET    /favorites                              → {"favorites": [{name, group, logo, tvg, now, next}, …]}
+//   POST   /favorites  {name, group, logo, tvg}    → adds one (or updates it, by name)
+//   DELETE /favorites?name=…                       → removes one
+//
+// tvg: the channel's guide ids (tvg-id), comma separated: the same channel can come several times in a playlist,
+// and only some of its copies have a guide. now/next: {title, start, stop} (epoch ms), from the guide.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { createGuide } from './epg.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const FIELDS = ['name', 'group', 'logo'];
+const FIELDS = ['name', 'group', 'logo', 'tvg'];
 
 // A small fixed shape; values are JSON strings, which YAML reads as double-quoted scalars.
 export function toYaml(list) {
@@ -53,7 +58,8 @@ function parseScalar(v) {
 export function clean(body) {
   const fav = {};
   for (const k of FIELDS) {
-    if (body && typeof body[k] === 'string' && body[k].trim()) fav[k] = body[k].trim().slice(0, 500);
+    const v = body && Array.isArray(body[k]) ? body[k].join(',') : body && body[k];
+    if (typeof v === 'string' && v.trim()) fav[k] = v.trim().slice(0, 500);
   }
   return fav.name ? fav : null;
 }
@@ -83,18 +89,23 @@ function send(res, status, json) {
   res.end(json === undefined ? '' : JSON.stringify(json));
 }
 
-export function createServer(file) {
+function withGuide(list, guide) {
+  if (!guide) return list;
+  return list.map((f) => ({ ...f, ...guide.nowNext(f.tvg ? f.tvg.split(',') : []) }));
+}
+
+export function createServer(file, guide = null) {
   return http.createServer((req, res) => {
     const url = new URL(req.url, 'http://x');
     if (req.method === 'OPTIONS') return send(res, 204);
     if (url.pathname !== '/favorites') return send(res, 404, { error: 'not found' });
-    if (req.method === 'GET') return send(res, 200, { favorites: load(file) });
+    if (req.method === 'GET') return send(res, 200, { favorites: withGuide(load(file), guide) });
     if (req.method === 'DELETE') {
       const name = url.searchParams.get('name');
       if (!name) return send(res, 400, { error: 'name is required' });
       const list = load(file).filter((f) => f.name !== name);
       save(file, list);
-      return send(res, 200, { favorites: list });
+      return send(res, 200, { favorites: withGuide(list, guide) });
     }
     if (req.method !== 'POST') return send(res, 405, { error: 'method not allowed' });
     let body = '';
@@ -113,7 +124,7 @@ export function createServer(file) {
       if (at >= 0) list[at] = fav;
       else list.push(fav);
       save(file, list);
-      send(res, 200, { favorites: list });
+      send(res, 200, { favorites: withGuide(list, guide) });
     });
   });
 }
@@ -121,5 +132,8 @@ export function createServer(file) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const port = parseInt(process.argv[2], 10) || 5002;
   const file = path.resolve(process.argv[3] || path.join(HERE, 'favorites.yml'));
-  createServer(file).listen(port, () => console.log(`EN-IPTV favorites on http://0.0.0.0:${port}/favorites (${file})`));
+  const guide = process.env.EPG_URL ? createGuide(process.env.EPG_URL) : null;
+  createServer(file, guide).listen(port, () =>
+    console.log(`EN-IPTV favorites on http://0.0.0.0:${port}/favorites (${file})${guide ? ', with EPG' : ''}`),
+  );
 }

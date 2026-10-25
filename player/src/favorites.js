@@ -2,6 +2,7 @@
 // (Raflix's "Directos" tab) can read them: a Tizen app can't read another's storage. A copy stays in localStorage
 // for when the server doesn't answer. The server's address comes from player/favorites.local.json at build time.
 import { timedFetch } from './utils.js';
+import { guideIds } from './logic.js';
 
 const CACHE_KEY = 'en_favorites';
 const BASE = String(__FAVORITES_URL__ || '').replace(/\/+$/, '');
@@ -42,21 +43,27 @@ export async function refreshFavorites() {
   return list;
 }
 
-// Adds or removes the channel; resolves to its new state, or null when the server couldn't save it.
-export async function toggleFavorite(channel) {
+function post(fav) {
+  return timedFetch(
+    BASE + '/favorites',
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fav) },
+    5000,
+  ).promise;
+}
+
+// Adds or removes the channel; resolves to its new state, or null when the server couldn't save it. `channels`
+// (the playlist) gives the favorite its guide ids, for what's on now in Raflix.
+export async function toggleFavorite(channel, channels) {
   if (!BASE || !channel) return null;
   const adding = !isFavorite(channel);
   try {
     const res = adding
-      ? await timedFetch(
-          BASE + '/favorites',
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: channel.name, group: channel.group || '', logo: channel.logo || '' }),
-          },
-          5000,
-        ).promise
+      ? await post({
+          name: channel.name,
+          group: channel.group || '',
+          logo: channel.logo || '',
+          tvg: guideIds(channels, channel.name),
+        })
       : await timedFetch(BASE + '/favorites?name=' + encodeURIComponent(channel.name), { method: 'DELETE' }, 5000)
           .promise;
     if (!res.ok) return null;
@@ -64,6 +71,18 @@ export async function toggleFavorite(channel) {
     return adding;
   } catch {
     return null;
+  }
+}
+
+// Favorites saved without guide ids (before the EPG) get them from the playlist, once.
+export async function completeGuideIds(channels) {
+  for (const fav of list.filter((f) => !f.tvg)) {
+    const tvg = guideIds(channels, fav.name);
+    if (!tvg.length) continue;
+    try {
+      const res = await post({ ...fav, tvg });
+      if (res.ok) keep((await res.json()).favorites);
+    } catch {}
   }
 }
 

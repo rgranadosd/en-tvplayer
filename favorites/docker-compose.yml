@@ -1,16 +1,20 @@
-# EN-IPTV favorites API (see README.md). Next to server.mjs:
-#   docker compose up -d
-# The favorites stay in ./data/favorites.yml (kept across restarts and updates).
+# EN-IPTV favorites API (see README.md). From this folder, in a clone of the repo:
+#   docker compose up -d                       (update: git pull && docker compose up -d --force-recreate)
+# .env next to this file (not in git): EPG_URL=<the playlist's url-tvg>, for what's on now and next. Optional.
+# The favorites stay in ./data/favorites.yml (not in git; kept across restarts and updates).
 services:
   en-iptv-favorites:
     image: node:22-alpine
     container_name: en-iptv-favorites
     restart: unless-stopped
     command: ["node", "/app/server.mjs", "5002", "/data/favorites.yml"]
+    environment:
+      EPG_URL: ${EPG_URL:-}
     ports:
       - "5002:5002"
     volumes:
       - ./server.mjs:/app/server.mjs:ro
+      - ./epg.mjs:/app/epg.mjs:ro
       - ./data:/data
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:5002/favorites"]
