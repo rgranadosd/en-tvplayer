@@ -156,12 +156,15 @@ def main():
 
     client = Sdb(sys.argv[1])
     capabilities = client.capabilities()
-    widget = newest_widget(is_legacy(capabilities.get("platform_version", "")))
+    legacy = is_legacy(capabilities.get("platform_version", ""))
+    widget = newest_widget(legacy)
     manifest = read_manifest(widget)
     application = re.search(r"<tizen:application[^>]*>", manifest).group(0)
     app_id = re.search(r'\bid="([^"]+)"', application).group(1)
     package_id = re.search(r'\bpackage="([^"]+)"', application).group(1)
-    remote = capabilities.get("sdk_toolpath", "/home/owner/share/tmp/sdk_tools").rstrip("/")
+    # Tizen 2.x has no "owner" user: its tools' folder is /opt/usr/apps/tmp.
+    default_path = "/opt/usr/apps/tmp" if legacy else "/home/owner/share/tmp/sdk_tools"
+    remote = capabilities.get("sdk_toolpath", default_path).rstrip("/")
     remote += f"/{widget.name}"
 
     print(f"Connected to {client.banner}; Tizen {capabilities.get('platform_version', '?')}")

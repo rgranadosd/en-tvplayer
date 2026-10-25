@@ -182,11 +182,12 @@ writeFileSync(join(TEMP, 'config.xml'), configXml);
 // Copy app files
 cpSync(DIST, TEMP, { recursive: true });
 
-// Fix paths: strip /enplayer/ base prefix (WGT serves from root). Legacy: relative paths, which every engine
-// resolves against the app's folder (2016's runtime isn't known to map "/" there).
+// Fix paths: strip /enplayer/ base prefix (WGT serves from root). Legacy: "./" relative paths, which every engine
+// resolves against the app's folder (2016's runtime isn't known to map "/" there); SystemJS, which loads the legacy
+// app, takes a path without "./" for a package name (its error #8).
 const htmlPath = join(TEMP, 'index.html');
 let html = readFileSync(htmlPath, 'utf-8');
-html = html.replace(/\/enplayer\//g, LEGACY ? '' : '/');
+html = html.replace(/\/enplayer\//g, LEGACY ? './' : '/');
 writeFileSync(htmlPath, html);
 
 // Copy app icon (spec-size 512x423 launcher art — not the small test icon)

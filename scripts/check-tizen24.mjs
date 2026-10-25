@@ -25,7 +25,7 @@ const packager = read('tizen/package.mjs');
 if (!packager.includes("LEGACY ? '2.4' : '4.0'")) fail('the legacy manifest does not target Tizen 2.4');
 if (!packager.includes("LEGACY ? '_tizen24' : ''"))
   fail('the legacy package name lacks _tizen24 (install.py needs it)');
-if (!packager.includes("LEGACY ? '' : '/'")) fail('the legacy package does not use relative paths');
+if (!packager.includes("LEGACY ? './' : '/'")) fail('the legacy package does not use ./ relative paths (SystemJS)');
 if (!read('player/vite.config.js').includes("'src/player-legacy.js'"))
   fail('the legacy build does not use player-legacy.js');
 
