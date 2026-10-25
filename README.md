@@ -86,7 +86,7 @@ A Samsung app can't read another app's data, so the favorites live in a small AP
 |---|---|
 | **RAFLIX IPTV** (this app) | Menu (→) › **Add to Favorites** / **Remove from Favorites** (or the Red key) saves the channel playing — the focused one in the channel list with the Red key — with its name, group, logo and guide ids (`tvg-id`). |
 | **Favorites API** | Keeps them in `favorites.yml` and, with `EPG_URL` (the playlist's `url-tvg`), reads the XMLTV guide every 30 minutes and adds what's on **now** and **next** to each one. |
-| **Raflix** ([free-my-tv](https://github.com/rgranadosd/free-my-tv)) | Its **Directos** tab shows one card per favorite: logo, programme, times, what's next and a progress bar. OK opens this app straight on that channel (Tizen app control `channel` + `group`), with a spinner and no splash. |
+| **Raflix** ([free-my-tv](https://github.com/rgranadosd/free-my-tv)) | Its **Directos** tab shows one card per favorite: logo, programme, times, what's next and a progress bar. OK opens this app straight on that channel (Tizen app control `channel` + `group`), with a spinner and no splash; the playlist is downloaded first, so the stream link is current. |
 
 **Set up**
 

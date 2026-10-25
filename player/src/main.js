@@ -326,7 +326,7 @@ async function init() {
     favorites.completeGuideIds(channels);
   });
   // Opened again while running, by an app asking for a channel (Raflix's "Directos" tab).
-  window.addEventListener('appcontrol', () => {
+  window.addEventListener('appcontrol', async () => {
     const request = favorites.requestedChannel();
     const playing = ui.getCurrentChannel();
     if (!request || !channels || !channels.length) return;
@@ -337,6 +337,9 @@ async function init() {
       showPlayer();
     }
     ui.closeAllOverlays();
+    ui.resetTuneStatus(request.name); // the name and "Connecting…" while the fresh list downloads
+    const fresh = await freshChannels();
+    if (fresh) applyFreshChannels(fresh);
     openRequestedChannel(request);
   });
 
@@ -352,7 +355,12 @@ async function init() {
 
   const autoRefresh = s.autoRefreshPlaylist !== false;
 
-  if (autoRefresh && activePlaylist && activePlaylist.url) {
+  if (quietBoot && s.channels && s.channels.length > 0) {
+    // Opened by Raflix on a channel: the fresh list first (stream URLs rotate, event groups change), then the
+    // tune; the cache only if the download fails. The start-up spinner covers the wait.
+    channels = (await freshChannels()) || s.channels;
+    startPlayer();
+  } else if (autoRefresh && activePlaylist && activePlaylist.url) {
     // Auto-refresh: always fetch fresh playlist on boot.
     if (s.channels && s.channels.length > 0) {
       // Cached channels available — show instantly, refresh in background.
@@ -1020,6 +1028,22 @@ async function refreshChannelsInBackground() {
   } catch (e) {
     console.warn('Background playlist refresh failed:', e.message);
     return false;
+  }
+}
+
+// The active playlist, downloaded now and saved; null when it can't be (the caller keeps the cached list). For a
+// channel Raflix asks for: its cached URL may have rotated since the last refresh.
+async function freshChannels() {
+  const active = getActivePlaylist();
+  if (!active || !active.url) return null;
+  try {
+    const list = await fetchPlaylistWithRetry(active, 1);
+    saveSettings({ channels: list, channelsFetched: new Date().toISOString() });
+    diag('fresh playlist: ' + list.length + ' channels');
+    return list;
+  } catch (e) {
+    diag('fresh playlist failed, using cache: ' + e.message);
+    return null;
   }
 }
 

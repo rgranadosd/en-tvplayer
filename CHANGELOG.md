@@ -20,6 +20,8 @@ All notable changes to RAFLIX IPTV (forked from EN TV Player) will be documented
   loader outcome, app milestones, AVPlay results); nothing ships without the file.
 - `eslint-plugin-compat` on the legacy sources (Safari 7-era APIs) and `check:tizen24` resolving the packaged paths.
 - `tizen/install.py --no-launch` (install without opening the app) and `--uninstall`.
+- A channel asked for by Raflix tunes with a freshly downloaded playlist (stream URLs rotate, event groups change),
+  whether the app was closed or running; the cached list only when the download fails.
 
 ### Changed
 - The start-up black background and spinner are inline in `index.html`, painted before any script or stylesheet.

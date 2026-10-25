@@ -112,8 +112,9 @@ en-tvplayer/
 | Red | Add/remove favorite (playing channel, or the focused one in the list) — needs `favorites/` running |
 | → › Add to Favorites | The same from the Menu, for remotes without color keys |
 
-Opened by another app with Tizen app-control data `channel` (+ `group`), the app tunes that channel by name, with no
-splash and no What's New (`quietBoot` in `main.js`; a spinner covers the start-up instead).
+Opened by another app with Tizen app-control data `channel` (+ `group`), the app downloads the playlist first
+(`freshChannels()`: URLs rotate; the cache if it fails) and tunes that channel by name, with no splash and no What's
+New (`quietBoot` in `main.js`; a spinner covers the start-up instead). Running, the `appcontrol` event does the same.
 
 ## 6. Key Features
 
