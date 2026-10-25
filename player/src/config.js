@@ -79,6 +79,13 @@ export function getSettings() {
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
       } catch {}
     }
+    // Never fetched anything and still on the stock playlist: start on the first build-time one, the owner's (the
+    // stock one is a fallback). A TV that has used any list keeps its choice.
+    const active = s.playlists[s.activePlaylistIndex];
+    if (!(s.channels || []).length && active && active.url === DEFAULT_PLAYLIST.url) {
+      const own = s.playlists.findIndex((p) => (__EXTRA_PLAYLISTS__ || []).some((x) => x.url === p.url));
+      if (own >= 0) s.activePlaylistIndex = own;
+    }
     return s;
   } catch {
     return { ...settingsDefaults, playlists: [{ ...DEFAULT_PLAYLIST }] };
