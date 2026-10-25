@@ -1151,6 +1151,18 @@ function updateRightFocus() {
   }
 }
 
+/* Now-playing bar: shown on a channel change or a key, gone after a few seconds */
+let nowPlayingTimer = null;
+const NOW_PLAYING_MS = 5000;
+
+export function flashNowPlaying() {
+  const el = document.getElementById('now-playing');
+  if (!el) return;
+  el.classList.remove('idle');
+  clearTimeout(nowPlayingTimer);
+  nowPlayingTimer = setTimeout(() => el.classList.add('idle'), NOW_PLAYING_MS);
+}
+
 /* Channel OSD */
 let osdTimer = null;
 

@@ -1482,6 +1482,9 @@ export function engineName() {
 }
 
 /** The package: Tizen 4+ (Shaka, AVPlay for direct media) or Tizen 2.4 (AVPlay only). */
+// The full boot splash; player-legacy.js (slow 2016-2017 TVs) skips it.
+export const LIGHT_BOOT = false;
+
 export function packageLabel() {
   return 'Tizen 4+ · Shaka + AVPlay';
 }

@@ -13,7 +13,7 @@ import {
   tuneSuperseded,
 } from './logic.js';
 import * as favorites from './favorites.js';
-import { diag } from './diag.js';
+import { diag, diagEnabled } from './diag.js';
 
 let currentIndex = 0;
 let channels;
@@ -27,6 +27,7 @@ let cleanupListeners = [];
 // refresh lands, re-tune the latest intent with its fresh URL.
 let playbackStarted = false;
 let tuneSucceeded = false;
+let tuneInFlight = false; // a loadChannel() not answered yet: slow TVs take longer than the playlist refresh
 let lastIntent = null;
 // Fast-zap sequence: overlapping tune bodies from a burst of presses share
 // one video element — only the latest press may touch the player.
@@ -97,8 +98,19 @@ function showBootSplash(statusText, always = false) {
   if (logo) logo.classList.remove('zoom-in');
   el.classList.remove('hidden', 'fade-out', 'zooming');
   bootShownAt = Date.now();
-  // Stage 1: icon is already visible — type the title, then the tagline.
   clearTimeout(bootTypewriterTimer);
+  el.classList.toggle('static', !!player.LIGHT_BOOT);
+  if (player.LIGHT_BOOT) {
+    // Slow TVs: the text at once, no typing (each step costs them CPU while the playlist downloads).
+    if (titleEl) {
+      titleEl.innerHTML = 'RAFLIX <span>IPTV</span>';
+      titleEl.classList.remove('typing');
+    }
+    if (typeEl) typeEl.textContent = BOOT_TAGLINE;
+    bootTypewriterEnd = bootShownAt;
+    return;
+  }
+  // Stage 1: icon is already visible — type the title, then the tagline.
   bootTypewriterEnd =
     bootShownAt +
     BOOT_TITLE_DELAY +
@@ -139,6 +151,11 @@ function hideBootSplash(holdAfterTypeMs = 0, onDone = null) {
     if (typeof onDone === 'function') onDone();
   };
   if (!el || el.classList.contains('hidden')) {
+    finish();
+    return;
+  }
+  if (player.LIGHT_BOOT) {
+    el.classList.add('hidden'); // slow TVs: no hold, zoom or fade
     finish();
     return;
   }
@@ -314,6 +331,12 @@ async function init() {
   }
 
   remote.init(handleRemoteAction);
+  document.addEventListener('keydown', ui.flashNowPlaying, true);
+  if (diagEnabled) {
+    // Exit on 2016 TVs needs two presses: what the app sees of each.
+    document.addEventListener('visibilitychange', () => diag('visible=' + !document.hidden));
+    document.addEventListener('keydown', (e) => diag('key ' + e.keyCode + ' ' + (e.key || '')), true);
+  }
 
   registerTizenKeys();
 
@@ -383,6 +406,7 @@ async function init() {
         startPlayer();
       } catch (e) {
         console.warn('Failed to fetch playlist:', e.message);
+        diag('playlist download failed: ' + e.message + ' (' + (activePlaylist.name || activePlaylist.url) + ')');
         hideBootSplashAndMaybeWhatsNew();
         showFirstRun();
       }
@@ -405,6 +429,7 @@ async function init() {
       startPlayer();
     } catch (e) {
       console.warn('Failed to fetch playlist:', e.message);
+      diag('playlist download failed: ' + e.message + ' (' + (activePlaylist.name || activePlaylist.url) + ')');
       hideBootSplashAndMaybeWhatsNew();
       showFirstRun();
     }
@@ -460,6 +485,7 @@ function startPlayer() {
   cleanupEventListeners();
   sortChannels(channels);
 
+  const tStart = Date.now();
   settings.init(document.getElementById('settings-page'), {
     onPlaylistFetched: (newChannels) => {
       sortChannels(newChannels);
@@ -480,7 +506,17 @@ function startPlayer() {
     },
   });
 
+  const tUi = Date.now();
   ui.init(channels, handleChannelSelect);
+  diag(
+    'start: settings ' +
+      (tUi - tStart) +
+      'ms, channel list ' +
+      (Date.now() - tUi) +
+      'ms, ' +
+      channels.length +
+      ' channels',
+  );
 
   const overlaySettings = getSettings();
   ui.setOverlayVisibility({
@@ -864,6 +900,7 @@ async function handleChannelSelect(channel) {
   const mySeq = ++tuneSeq;
   hideLaunchSpinner();
   diag('tune ' + channel.name);
+  ui.flashNowPlaying();
   currentIndex = channels.indexOf(channel);
   // Latest tune intent (name+group survive token rotation; URLs don't).
   lastIntent = { name: channel.name, group: channel.group || 'Ungrouped' };
@@ -918,8 +955,11 @@ async function handleChannelSelect(channel) {
   } catch {}
   ui.setProxyToggleLabel(!!(getSettings().proxyChannels || {})[channel.url]);
   ui.setFavoriteLabel(favorites.isFavorite(channel));
+  tuneInFlight = true;
   const ok = await player.loadChannel(channel);
+  tuneInFlight = false;
   tuneSucceeded = ok === true;
+  if (ok && player.LIGHT_BOOT) hideBootSplash(); // slow TVs: off as soon as the channel is up, not after the refresh
   if (mySeq === tuneSeq) ui.setEngineTag(ok ? player.engineInUse() : null);
   if (!ok) {
     hideProgress();
@@ -1022,7 +1062,7 @@ async function refreshChannelsInBackground() {
     // never got anywhere, re-tune the same channel with its fresh URL
     // instead of stranding the user on the brand screen. Working playback
     // is never touched.
-    if (!playbackStarted && !tuneSucceeded && lastIntent) {
+    if (!playbackStarted && !tuneSucceeded && !tuneInFlight && lastIntent) {
       const at = findIntentIndex(channels, lastIntent);
       if (at >= 0) ui.selectChannel(at, true);
     }
