@@ -114,6 +114,13 @@ export async function loadChannel(channel) {
   });
   if (myToken !== loadToken) return false;
   showLoading(false);
+  if (!ok && avplay.lastFailure() === 'timeout') {
+    // No frame yet but no error either: a slow start (2016 TVs take 20 s on live TS). AVPlay keeps buffering and
+    // its first frame still clears the veil; restarting would throw that buffer away.
+    diag('avplay slow start, still waiting ' + channel.name);
+    started = true;
+    return true;
+  }
   if (!ok) {
     retryOrFail(channel, myToken, 'no picture');
     return false;
@@ -155,6 +162,9 @@ export function getBufferingPercent() {
 export function engineName() {
   return 'Samsung AVPlay';
 }
+
+// Slow 2016-2017 TVs: no boot splash over cached channels and no splash animations (see main.js).
+export const LIGHT_BOOT = true;
 
 export function packageLabel() {
   return 'Tizen 2.4 · AVPlay only';
