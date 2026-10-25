@@ -2,6 +2,12 @@
 
 All notable changes to RAFLIX IPTV (forked from EN TV Player) will be documented in this file.
 
+## [1.0.0-rc.2] - 2026-10-25
+
+### Changed
+- Opened from Raflix on a channel (app control data), the app skips the splash and What's New and goes straight to the channel, so the two apps feel like one. What's New shows on the next normal launch; the splash still shows when there are no cached channels yet.
+- A spinner shows from the app's first paint until the splash or the first channel takes over.
+
 ## [1.0.0-rc.1] - 2026-10-24 — RAFLIX IPTV
 
 First RAFLIX IPTV release candidate, forked from EN IPTV 3.2.0 (its history follows below).

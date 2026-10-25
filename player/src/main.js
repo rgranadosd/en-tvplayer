@@ -57,14 +57,24 @@ const BOOT_MIN_MS = 1500; // logo stays at least this long on every launch
 const BOOT_ZOOM_MS = 700; // fly-into-the-logo exit
 const BOOT_IDLE_HOLD_MS = 1500; // extra hold after tagline when no playlist fetch runs
 const BOOT_READ_MS = 1800; // linger once all text is up so it can be read
+// Opened by Raflix on a channel: no splash and no What's New (shown on the next normal launch), straight to the
+// channel, so the two apps feel like one.
+const quietBoot = !!favorites.requestedChannel();
 
-function showBootSplash(statusText) {
+// `always`: also when quietBoot (no channels cached yet: nothing else to show while the playlist downloads).
+function hideLaunchSpinner() {
+  const el = document.getElementById('launch-spinner');
+  if (el && el.parentNode) el.parentNode.removeChild(el);
+}
+
+function showBootSplash(statusText, always = false) {
   const el = document.getElementById('boot-splash');
   const statusEl = document.getElementById('boot-status');
   const typeEl = document.getElementById('boot-typewriter');
   const loadingEl = document.getElementById('boot-loading');
   const verEl = document.getElementById('boot-version');
-  if (!el) return;
+  if (!el || (quietBoot && !always)) return;
+  hideLaunchSpinner();
   if (statusEl && statusText) statusEl.textContent = statusText;
   if (verEl) verEl.textContent = 'v' + APP_VERSION;
   // Reset animation state
@@ -159,6 +169,18 @@ const LAST_SEEN_KEY = 'en_last_seen_version';
 // RAFLIX IPTV's own history; EN IPTV's (what it was forked from) is in CHANGELOG.md.
 const CHANGELOG = [
   {
+    version: '1.0.0-rc.2',
+    sections: [
+      {
+        type: 'changed',
+        items: [
+          'Opened from Raflix on a channel: no splash, straight to the channel',
+          'A spinner shows while the app starts',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.0.0-rc.1',
     sections: [
       {
@@ -241,7 +263,7 @@ function hideBootSplashAndMaybeWhatsNew(holdAfterTypeMs = 0, onDone = null) {
   // the zoom/fade exit and popped it over the splash mid-load.
   hideBootSplash(holdAfterTypeMs, () => {
     if (typeof onDone === 'function') onDone();
-    if (checkWhatsNew()) {
+    if (!quietBoot && checkWhatsNew()) {
       setTimeout(showWhatsNew, 300);
     }
   });
@@ -319,7 +341,7 @@ async function init() {
       });
     } else {
       // No cached channels — show splash while fetching (with retries).
-      showBootSplash('Downloading playlist...');
+      showBootSplash('Downloading playlist...', true);
       try {
         const newChannels = await fetchPlaylistWithRetry(activePlaylist);
         saveSettings({ channels: newChannels, channelsFetched: new Date().toISOString() });
@@ -341,7 +363,7 @@ async function init() {
     hideBootSplashAndMaybeWhatsNew(BOOT_IDLE_HOLD_MS);
   } else if (activePlaylist && activePlaylist.url) {
     // No cached channels but has playlist URL — fetch once to bootstrap.
-    showBootSplash('Loading playlist...');
+    showBootSplash('Loading playlist...', true);
     try {
       const newChannels = await fetchPlaylistWithRetry(activePlaylist);
       saveSettings({ channels: newChannels, channelsFetched: new Date().toISOString() });
@@ -654,6 +676,7 @@ function showFavoriteMarks() {
 }
 
 function showEmptyState() {
+  hideLaunchSpinner();
   showPlayer();
   const active = getActivePlaylist();
   ui.showEmptyLogo(
@@ -701,6 +724,7 @@ function showFirstRun() {
   // shell with its empty state — never strand the user on Settings. The
   // menu opens showing the Settings button, and a hint names the Blue key.
   channels = channels || [];
+  hideLaunchSpinner();
   startPlayer();
   ui.toggleRightSidebar();
   showBootSplash('Loading...');
@@ -804,6 +828,7 @@ async function handleChannelSelect(channel) {
   // background refresh may land while this tune is still yielding, and it
   // needs the latest intent to decide on a fresh-URL re-tune.
   const mySeq = ++tuneSeq;
+  hideLaunchSpinner();
   currentIndex = channels.indexOf(channel);
   // Latest tune intent (name+group survive token rotation; URLs don't).
   lastIntent = { name: channel.name, group: channel.group || 'Ungrouped' };
