@@ -708,8 +708,8 @@ function startPlayer() {
 // playlist refresh and re-sort); a raw index would rot on every fetch.
 function restoreLastSession() {
   if (openRequestedChannel(favorites.requestedChannel())) return;
-  const t0 = Date.now();
   let idx = 0;
+  let view = null;
   try {
     const s = getSettings();
     const at = findResumeIndex(channels, s && s.lastChannelUrl, getHiddenGroups());
@@ -720,17 +720,27 @@ function restoreLastSession() {
       const groups = ui.getGroups().map((x) => x.name);
       const savedView = s.lastGroup === 'all' ? 'All Channels' : s.lastGroup;
       if (savedView && groups.includes(savedView) && (savedView === 'All Channels' || savedView === g)) {
-        ui.showGroupChannels(savedView);
+        view = savedView;
       } else if (groups.includes(g)) {
-        ui.showGroupChannels(g);
+        view = g;
       } else {
-        ui.showGroupChannels('All Channels');
+        view = 'All Channels';
       }
-      selectedGroup = ui.getSelectedGroup();
     }
   } catch {}
-  diag('resume: last channel and its group view ' + (Date.now() - t0) + 'ms');
-  ui.selectChannel(idx, true);
+  // The stream first, the channel list after: drawing the group view and the list took ~4 s on 2016 TVs, all of it
+  // before the stream was even asked for. Drawn once the player has opened it, while it loads; the list marks the
+  // channel without tuning it again.
+  handleChannelSelect(channels[idx], () => {
+    const t0 = Date.now();
+    if (view) ui.showGroupChannels(view);
+    ui.selectChannel(idx, true, true);
+    selectedGroup = ui.getSelectedGroup();
+    try {
+      saveSettings({ lastGroup: selectedGroup });
+    } catch {}
+    diag('resume: group view and list drawn after the tune started, ' + (Date.now() - t0) + 'ms');
+  });
 }
 
 // A channel another app asked for (by name; URLs rotate), in its group's view.
@@ -912,7 +922,8 @@ function forcePaint() {
   } catch {}
 }
 
-async function handleChannelSelect(channel) {
+// afterStart: called once the player has the stream open (the boot draws the channel list then).
+async function handleChannelSelect(channel, afterStart) {
   // Record the tune intent FIRST (before the paint-delay await below): the
   // background refresh may land while this tune is still yielding, and it
   // needs the latest intent to decide on a fresh-URL re-tune.
@@ -957,7 +968,10 @@ async function handleChannelSelect(channel) {
   // Fast-zap burst: a newer press arrived while the veil was painting — the
   // player belongs to it now, so bail before touching anything. The UI above
   // already shows the latest channel; only the load is skipped.
-  if (tuneSuperseded(mySeq, tuneSeq)) return;
+  if (tuneSuperseded(mySeq, tuneSeq)) {
+    if (afterStart) afterStart();
+    return;
+  }
   // Stamp the active playlist so Channel Source cards can show "last played".
   try {
     const s = getSettings();
@@ -975,7 +989,9 @@ async function handleChannelSelect(channel) {
   ui.setProxyToggleLabel(!!(getSettings().proxyChannels || {})[channel.url]);
   ui.setFavoriteLabel(favorites.isFavorite(channel));
   tuneInFlight = true;
-  const ok = await player.loadChannel(channel);
+  const loading = player.loadChannel(channel);
+  if (afterStart) afterStart();
+  const ok = await loading;
   tuneInFlight = false;
   tuneSucceeded = ok === true;
   if (ok && player.LIGHT_BOOT) hideBootSplash(); // slow TVs: off as soon as the channel is up, not after the refresh

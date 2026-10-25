@@ -503,7 +503,8 @@ function channelRowStride(container) {
   return row.offsetHeight + parseFloat(cs.marginTop) + parseFloat(cs.marginBottom);
 }
 
-export function selectChannel(index, skipFullscreen) {
+// silent: mark the channel in the list without tuning it (the caller already did).
+export function selectChannel(index, skipFullscreen, silent) {
   if (index < 0 || index >= channels.length) return;
 
   currentIndex = index;
@@ -516,7 +517,7 @@ export function selectChannel(index, skipFullscreen) {
   updateActiveChannel();
   updateFocus();
 
-  if (onChannelSelect) {
+  if (onChannelSelect && !silent) {
     onChannelSelect(channels[index]);
   }
 
