@@ -20,6 +20,7 @@ import {
   attemptSuffix,
   stallPatienceExceeded,
   playlistsToAdd,
+  bufferStalled,
 } from './logic.js';
 
 const CHANNELS = [
@@ -296,5 +297,19 @@ describe('guideIds', () => {
   it('is empty for unknown names and missing lists', () => {
     expect(guideIds(list, 'Nope')).toEqual([]);
     expect(guideIds(undefined, 'DAZN F1')).toEqual([]);
+  });
+});
+
+describe('bufferStalled', () => {
+  it('is a slow start, not a stall, while nothing has been buffered', () => {
+    expect(bufferStalled(0, 60000, 8000)).toBe(false);
+  });
+
+  it('is a stall once buffering stopped advancing for the limit', () => {
+    expect(bufferStalled(10000, 18000, 8000)).toBe(true);
+  });
+
+  it('waits while the buffer still moved recently', () => {
+    expect(bufferStalled(10000, 17999, 8000)).toBe(false);
   });
 });

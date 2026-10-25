@@ -1,4 +1,7 @@
 import { diag } from './diag.js';
+import { bufferStalled } from './logic.js';
+
+const STALL_MS = 8000; // a buffer that stops moving this long before the first frame: retried at once
 // Native playback via Samsung AVPlay (webapis.avplay).
 // Fallback for (a) streams the browser decoder cannot render (e.g. interlaced
 // MBAFF H264 — buffering completes, zero frames painted, no Shaka error) and
@@ -20,6 +23,7 @@ let active = false;
 // Why the last play() resolved false: 'error' (AVPlay said so, or prepare failed) or 'timeout' (no frame yet — on
 // a 2016 TV a live TS can take 20 s to start, and it's still coming). Callers decide whether to retry.
 let failure = null;
+let stallTimer = null;
 let readyReport = null; // the zapping line for the diagnostics, sent once per play()
 
 export function lastFailure() {
@@ -97,6 +101,7 @@ export function play(url, { userAgent, referer, timeoutMs = 15000 } = {}) {
     const marks = [];
     const at = (what) => marks.push(what + ' +' + (Date.now() - t0));
     let lastPct = -1;
+    let progressAt = 0;
     const report = (outcome) => {
       const line = 'zap ' + streamLabel(url) + ' ' + outcome + ' +' + (Date.now() - t0) + 'ms: ' + marks.join(', ');
       setTimeout(() => diag(line), 0);
@@ -114,6 +119,7 @@ export function play(url, { userAgent, referer, timeoutMs = 15000 } = {}) {
           if (bufferingCallback) bufferingCallback(true);
         },
         onbufferingprogress: (percent) => {
+          progressAt = Date.now();
           if (percent >= lastPct + 25) {
             lastPct = percent;
             at(percent + '%');
@@ -127,6 +133,7 @@ export function play(url, { userAgent, referer, timeoutMs = 15000 } = {}) {
         oncurrentplaytime: () => {
           if (!firstFrameSeen) {
             firstFrameSeen = true;
+            clearInterval(stallTimer);
             at('frame');
             if (!readyResolve && readyReport) {
               readyReport('late frame');
@@ -165,6 +172,17 @@ export function play(url, { userAgent, referer, timeoutMs = 15000 } = {}) {
           fail();
         }
       }, fail);
+      // The server stopped sending before the first frame: fail now (the caller retries) instead of waiting the
+      // ~90 s AVPlay takes to give up. Past play()'s own timeout (a slow start) it goes through onerror's callback.
+      clearInterval(stallTimer);
+      stallTimer = setInterval(() => {
+        if (firstFrameSeen || !bufferStalled(progressAt, Date.now(), STALL_MS)) return;
+        clearInterval(stallTimer);
+        at('stall');
+        failure = 'stall';
+        if (readyResolve) resolveReady(false);
+        else if (errorCallback) errorCallback('STALLED');
+      }, 1000);
       readyTimer = setTimeout(() => {
         if (!firstFrameSeen) failure = 'timeout';
         resolveReady(firstFrameSeen);
@@ -190,6 +208,7 @@ export function resume() {
 
 export function stop() {
   clearReadyTimer();
+  clearInterval(stallTimer);
   readyResolve = null;
   readyReport = null;
   firstFrameSeen = false;

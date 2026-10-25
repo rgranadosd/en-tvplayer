@@ -184,3 +184,10 @@ export function playlistsToAdd(saved, extra, alreadyAdded) {
   const added = alreadyAdded || [];
   return (extra || []).filter((p) => p && p.url && !urls.includes(p.url) && !added.includes(p.url));
 }
+
+// Before the first frame: the buffer started filling and has not moved for stallMs — the server stopped sending
+// (a channel server that serves one stream at a time does this when another connection takes it). Nothing
+// buffered yet is a slow start (some channels take 20-30 s to begin), not a stall. progressAt is 0 until then.
+export function bufferStalled(progressAt, now, stallMs) {
+  return progressAt > 0 && now - progressAt >= stallMs;
+}
