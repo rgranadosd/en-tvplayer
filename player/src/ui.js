@@ -531,18 +531,26 @@ export function selectChannel(index, skipFullscreen) {
     nameEl.textContent = channels[index].name;
   }
 
-  if (infoEl) {
-    const ext = channels[index].url.split('.').pop().split('?')[0];
-    infoEl.textContent = ext.toUpperCase();
-  }
+  currentFormat = streamFormat(channels[index].url);
+  if (infoEl) infoEl.textContent = currentFormat;
+}
+
+let currentFormat = '';
+
+/** "TS", "M3U8", "MPD"…: the extension of the URL's last path segment, or '' when it has none (token-only URLs). */
+function streamFormat(url) {
+  const last = String(url || '')
+    .split(/[?#]/)[0]
+    .split('/')
+    .pop();
+  const m = /\.([a-z0-9]{1,5})$/i.exec(last);
+  return m ? m[1].toUpperCase() : '';
 }
 
 /** Appends the engine playing the channel to the format tag in the now-playing bar ("TS · AVPlay"). */
 export function setEngineTag(engine) {
   const infoEl = document.getElementById('channel-info');
-  if (!infoEl) return;
-  const format = infoEl.textContent.split(' · ')[0];
-  infoEl.textContent = engine ? format + ' · ' + engine : format;
+  if (infoEl) infoEl.textContent = [currentFormat, engine].filter(Boolean).join(' · ');
 }
 
 export function navigateUp() {
