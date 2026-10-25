@@ -26,6 +26,7 @@ player/playlists.local.json
 
 # Favorites API address for local builds, and the favorites themselves
 player/favorites.local.json
+player/diag.local.json
 favorites/favorites.yml
 favorites/data/
 favorites/.env

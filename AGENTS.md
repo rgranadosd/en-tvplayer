@@ -70,6 +70,17 @@ en-tvplayer/
   compat.js polyfills, load order). DOM methods polyfills can't add go in `public/compat.js`, guarded.
 - Keep both working: the same `player.js`/`player-legacy.js` exports, and no `KeyboardEvent.key`-only handling (2016
   has keyCode only: `SAMSUNG_KEY_CODES` in remote.js). `tizen/install.py` picks the package by the TV's Tizen version.
+- The legacy package must survive a JavaScript failure: its stylesheet is a linked `styles.css` (Vite would inline it
+  into the SystemJS chunk), and `index.html` alone shows "could not start" after 20 s without `window.__appStarted`
+  (set first thing in `init()`). Paths in the package are `./…` (SystemJS error #8 otherwise).
+- `eslint-plugin-compat` (browsers `safari >= 7`, the 2016 engine's era) flags browser APIs the legacy sources use
+  and that TV lacks; polyfilled ones are listed in `eslint.config.mjs`. `check:tizen24` also resolves every path of
+  the packaged HTML as the TV would.
+- **Testing on the 2016 TV** (UE55KS8000, 192.168.1.128): no inspector works there (`0 debug` answers nothing), so
+  build with `player/diag.local.json` (`{"url": "http://<mac-ip>:8099/log"}`, not in git) and run
+  `node scripts/diag-server.mjs`: the HTML reports page errors and the loader's outcome, the app its milestones
+  (`src/diag.js`). Without the file nothing is sent or shipped. Install with `--no-launch` while someone watches,
+  `--uninstall` to leave the TV clean. One attempt per session; if it fails, back to the Mac.
 
 ## 4. Workflow Rules
 

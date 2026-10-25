@@ -103,13 +103,16 @@ export function play(url, { userAgent, referer, timeoutMs = 15000 } = {}) {
       avplay.open(url);
       active = true;
       avplay.setDisplayRect(0, 0, 1920, 1080);
-      avplay.prepareAsync(() => {
-        try {
-          avplay.play();
-        } catch {
-          resolveReady(false);
-        }
-      }, () => resolveReady(false));
+      avplay.prepareAsync(
+        () => {
+          try {
+            avplay.play();
+          } catch {
+            resolveReady(false);
+          }
+        },
+        () => resolveReady(false),
+      );
       readyTimer = setTimeout(() => resolveReady(firstFrameSeen), timeoutMs);
     } catch {
       resolveReady(false);

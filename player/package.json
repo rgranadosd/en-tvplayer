@@ -17,6 +17,8 @@
     "@vitejs/plugin-legacy": "^6.1.1",
     "acorn": "^8.19.0",
     "autoprefixer": "^10.6.1",
+    "cssnano": "^9.9.0",
+    "postcss": "^8.5.31",
     "terser": "^5.51.2",
     "vite": "^6.3.5",
     "vitest": "^5.0.2",

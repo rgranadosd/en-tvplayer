@@ -2,7 +2,9 @@
 // Maps categories → group and live streams → channels in provider num order.
 
 function baseHost(host) {
-  return String(host || '').trim().replace(/\/+$/, '');
+  return String(host || '')
+    .trim()
+    .replace(/\/+$/, '');
 }
 
 function apiUrl(entry, params) {
@@ -56,12 +58,19 @@ export async function fetchXtreamChannels(entry) {
     if (c && c.category_id != null) names[String(c.category_id)] = c.category_name || 'Ungrouped';
   }
   const list = (Array.isArray(streams) ? streams : [])
-    .filter(s => s && s.stream_id != null)
+    .filter((s) => s && s.stream_id != null)
     .sort((a, b) => (Number(a.num) || 0) - (Number(b.num) || 0));
   return list.map((s, index) => ({
-    name: s.name || ('Channel ' + (index + 1)),
-    url: host + '/live/' + encodeURIComponent(entry.username) + '/' +
-      encodeURIComponent(entry.password) + '/' + s.stream_id + '.m3u8',
+    name: s.name || 'Channel ' + (index + 1),
+    url:
+      host +
+      '/live/' +
+      encodeURIComponent(entry.username) +
+      '/' +
+      encodeURIComponent(entry.password) +
+      '/' +
+      s.stream_id +
+      '.m3u8',
     channelNumber: Number(s.num) > 0 ? Number(s.num) : index + 1,
     drm: null,
     userAgent: null,

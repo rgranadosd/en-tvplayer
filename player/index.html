@@ -6,8 +6,8 @@
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>RAFLIX IPTV</title>
   <link rel="icon" type="image/png" href="/favicon.png">
-  <!-- Painted before any script or stylesheet (the legacy build's styles come with its JavaScript): black, and the
-       start-up spinner. Plain CSS with -webkit- prefixes, for every TV the app supports. -->
+  <!-- Painted before any script or stylesheet: black, and the start-up spinner. Plain CSS with -webkit- prefixes,
+       for every TV the app supports. -->
   <style>
     html, body { background: #000; }
     #launch-spinner {
@@ -28,6 +28,18 @@
 <body>
   <!-- Up from the first paint until the splash or the first tune takes over (opened from Raflix there's no splash). -->
   <div id="launch-spinner"></div>
+  <!-- Shown by the HTML alone when the app's code hasn't run after a while (main.js sets window.__appStarted). -->
+  <div id="launch-failed" style="display:none;position:fixed;left:0;top:0;right:0;bottom:0;z-index:10001;background:#000;color:#fff;text-align:center;padding-top:28%;font-family:sans-serif;font-size:34px">
+    RAFLIX IPTV could not start on this TV.<br><span style="font-size:24px;color:#aaa">Press Exit, then open it again. If it keeps failing, reinstall it.</span>
+  </div>
+  <script>
+    setTimeout(function () {
+      if (window.__appStarted) return;
+      var s = document.getElementById('launch-spinner');
+      if (s && s.parentNode) s.parentNode.removeChild(s);
+      document.getElementById('launch-failed').style.display = 'block';
+    }, 20000);
+  </script>
   <div id="app">
     <!-- Channel List Sidebar -->
     <div id="sidebar" class="sidebar closed">

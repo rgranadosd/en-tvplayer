@@ -13,6 +13,7 @@ import {
   tuneSuperseded,
 } from './logic.js';
 import * as favorites from './favorites.js';
+import { diag } from './diag.js';
 
 let currentIndex = 0;
 let channels;
@@ -299,6 +300,9 @@ function closeWhatsNew() {
 }
 
 async function init() {
+  window.__appStarted = true; // index.html's launch-failed message waits for this
+  diag('app init v' + APP_VERSION + (quietBoot ? ' (quiet boot)' : '') + ' engine=' + player.engineName());
+  window.addEventListener('unhandledrejection', (e) => diag('UNHANDLED ' + (e.reason && (e.reason.stack || e.reason))));
   const videoEl = document.getElementById('video');
   if (!player.initPlayer(videoEl)) {
     document.body.innerHTML =
@@ -850,6 +854,7 @@ async function handleChannelSelect(channel) {
   // needs the latest intent to decide on a fresh-URL re-tune.
   const mySeq = ++tuneSeq;
   hideLaunchSpinner();
+  diag('tune ' + channel.name);
   currentIndex = channels.indexOf(channel);
   // Latest tune intent (name+group survive token rotation; URLs don't).
   lastIntent = { name: channel.name, group: channel.group || 'Ungrouped' };
@@ -1066,6 +1071,7 @@ function showStaleCacheNotice() {
     if (iso) when = ' from ' + new Date(iso).toLocaleDateString();
   } catch {}
   ui.showTransientNotice('Playlist update failed — using saved list' + when);
+  diag('playlist refresh failed, using cache');
 }
 
 function registerTizenKeys() {

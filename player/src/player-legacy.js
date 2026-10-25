@@ -5,6 +5,7 @@ import * as avplay from './avplay.js';
 import { withAuthQuery } from './utils.js';
 import { tuneCountersReset } from './logic.js';
 import { logEvent, showLoading, showError, hideError } from './stage.js';
+import { diag } from './diag.js';
 
 const RETRIES = 2; // a cut stream is reopened this many times before giving up
 const RETRY_DELAY_MS = 2000;
@@ -55,6 +56,7 @@ function referer(channel) {
 function retryOrFail(channel, myToken, why) {
   if (myToken !== loadToken) return;
   logEvent('WARN', 'Native playback failed (' + why + '): ' + (channel.name || ''));
+  diag('avplay failed (' + why + ') retries=' + retries + ' ' + channel.name);
   if (retries < RETRIES) {
     retries++;
     retryTimer = setTimeout(() => {
@@ -90,6 +92,7 @@ export async function loadChannel(channel) {
   hideError();
   showLoading(true);
   if (!avplay.isAvailable()) {
+    diag('avplay unavailable: webapis=' + typeof window.webapis);
     showError('This TV has no native player for channels.');
     return false;
   }
@@ -118,6 +121,7 @@ export async function loadChannel(channel) {
   retries = 0;
   hideError();
   logEvent('INFO', 'Playing natively: ' + (channel.name || ''));
+  diag('avplay playing ' + channel.name);
   return true;
 }
 

@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Install and launch the newest signed EN IPTV widget over Samsung SDB."""
+"""Install and launch the newest signed RAFLIX IPTV widget over Samsung SDB.
+
+    python3 tizen/install.py <TV-IP>                 # the package for the TV's Tizen version, then opens it
+    python3 tizen/install.py <TV-IP> --no-launch     # installs without opening it (someone is watching the TV)
+    python3 tizen/install.py <TV-IP> --uninstall     # removes the app
+"""
 
 import re
 import socket
@@ -151,14 +156,21 @@ def read_manifest(widget):
 
 
 def main():
-    if len(sys.argv) != 2:
-        raise SystemExit("Usage: python3 tizen/install.py <TV-IP>")
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    if len(args) != 1:
+        raise SystemExit(__doc__)
+    uninstall = "--uninstall" in sys.argv
+    launch = "--no-launch" not in sys.argv
 
-    client = Sdb(sys.argv[1])
+    client = Sdb(args[0])
     capabilities = client.capabilities()
     legacy = is_legacy(capabilities.get("platform_version", ""))
-    widget = newest_widget(legacy)
-    manifest = read_manifest(widget)
+    if uninstall:
+        # Only the app's ids are needed: tizen/config.xml has them.
+        manifest = (ROOT / "tizen" / "config.xml").read_text(encoding="utf-8")
+    else:
+        widget = newest_widget(legacy)
+        manifest = read_manifest(widget)
     application = re.search(r"<tizen:application[^>]*>", manifest).group(0)
     app_id = re.search(r'\bid="([^"]+)"', application).group(1)
     package_id = re.search(r'\bpackage="([^"]+)"', application).group(1)
@@ -168,16 +180,26 @@ def main():
     remote += f"/{widget.name}"
 
     print(f"Connected to {client.banner}; Tizen {capabilities.get('platform_version', '?')}")
+    if uninstall:
+        result = client.shell(f"0 vd_appuninstall {package_id}", r"spend time", 120)
+        if "uninstall completed" not in result:
+            raise SystemExit("TV did not confirm the removal (some TVs' sdbd ignores it: remove it on the TV, in "
+                             "Apps):\n" + result.strip())
+        print("RAFLIX IPTV removed.")
+        return
     print(f"Copying {widget.name}...")
     client.push(remote, widget.read_bytes())
     print("Installing...")
     result = client.shell(f"0 vd_appinstall {package_id} {remote}", r"spend time", 120)
     if "install completed" not in result:
         raise SystemExit("TV did not complete the installation:\n" + result.strip())
-    launch = client.shell(f"0 was_execute {app_id}", r"launched|spend time", 20)
-    if "launched" not in launch:
-        raise SystemExit("Installed, but TV did not confirm launch:\n" + launch.strip())
-    print("EN IPTV installed and launched.")
+    if not launch:
+        print("RAFLIX IPTV installed (not opened).")
+        return
+    started = client.shell(f"0 was_execute {app_id}", r"launched|spend time", 20)
+    if "launched" not in started:
+        raise SystemExit("Installed, but TV did not confirm launch:\n" + started.strip())
+    print("RAFLIX IPTV installed and launched.")
 
 
 if __name__ == "__main__":

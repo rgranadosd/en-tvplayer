@@ -21,6 +21,33 @@ function getFavoritesUrl() {
   return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf-8')).url || '' : '';
 }
 
+// Diagnostic beacon address (src/diag.js) from player/diag.local.json (not in git): {"url": "http://<mac>:8099/log"}.
+// Without the file, nothing is sent and the HTML hook isn't added.
+function getDiagUrl() {
+  const file = path.resolve(__dirname, 'diag.local.json');
+  return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf-8')).url || '' : '';
+}
+
+// With a diag URL: a <script> first in <head> that reports page errors and the legacy loader's failure — the app's
+// own diag.js only runs once the bundle has loaded, which is what failed on the 2016 TV.
+function diagHtmlHook(url) {
+  if (!url) return (html) => html;
+  const base = JSON.stringify(url);
+  const hook =
+    '<script>window.__diag=function(m){try{new Image().src=' +
+    base +
+    "+'?'+encodeURIComponent(String(m).slice(0,1500))+'&_='+Date.now();}catch(e){}};" +
+    "window.onerror=function(m,u,l,c){__diag('ERROR '+m+' @'+(u||'').split('/').pop()+':'+l+':'+c);};" +
+    "__diag('html start '+navigator.userAgent);</script>";
+  return (html) =>
+    html
+      .replace('<head>', '<head>\n  ' + hook)
+      .replace(
+        /System\.import\((document\.getElementById\('vite-legacy-entry'\)\.getAttribute\('data-src'\))\)/,
+        "System.import($1).then(function(){__diag('bundle loaded')},function(e){__diag('BUNDLE FAILED '+e+' '+((e&&e.stack)||'').slice(0,500))})",
+      );
+}
+
 function getAppVersion() {
   const rootPkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'package.json'), 'utf-8'));
   return rootPkg.version || '0.0.0';
@@ -52,6 +79,19 @@ function staticCssVars(overrides) {
 }
 staticCssVars.postcss = true;
 
+// The legacy build's stylesheet, as a file: Vite inlines CSS into SystemJS chunks, and then a JavaScript failure
+// leaves the page unstyled (2016 TV, first try). Linked from index.html instead, so the layout survives.
+async function writeLegacyStylesheet(outDir, plugins) {
+  const postcss = (await import('postcss')).default;
+  const cssnano = (await import('cssnano')).default;
+  const src = path.resolve(__dirname, 'src/styles.css');
+  const result = await postcss([...plugins, cssnano({ preset: 'default' })]).process(fs.readFileSync(src, 'utf-8'), {
+    from: src,
+    to: path.resolve(__dirname, outDir, 'styles.css'),
+  });
+  fs.writeFileSync(path.resolve(__dirname, outDir, 'styles.css'), result.css);
+}
+
 // `vite build --mode legacy`: 2016-2017 TVs (Tizen 2.4/3, WebKit r152340 / Chromium 47). Native AVPlay instead of
 // Shaka (player-legacy.js), ES5 with polyfills (fetch, Promise…), static CSS with -webkit- prefixes, in dist-legacy/.
 const LEGACY_BROWSERS = ['safari >= 7', 'chrome >= 30'];
@@ -59,11 +99,13 @@ const LEGACY_BROWSERS = ['safari >= 7', 'chrome >= 30'];
 export default defineConfig(({ mode }) => {
   const isLegacy = mode === 'legacy';
   const outDir = isLegacy ? 'dist-legacy' : 'dist';
+  const legacyCss = [staticCssVars({ '--tv-scale': '1.35' }), autoprefixer({ overrideBrowserslist: LEGACY_BROWSERS })];
   return {
     define: {
       __APP_VERSION__: JSON.stringify(getAppVersion()),
       __EXTRA_PLAYLISTS__: JSON.stringify(getExtraPlaylists()),
       __FAVORITES_URL__: JSON.stringify(getFavoritesUrl()),
+      __DIAG_URL__: JSON.stringify(getDiagUrl()),
     },
     root: '.',
     base: '/enplayer/',
@@ -82,13 +124,7 @@ export default defineConfig(({ mode }) => {
           : []),
       ],
     },
-    css: isLegacy
-      ? {
-          postcss: {
-            plugins: [staticCssVars({ '--tv-scale': '1.35' }), autoprefixer({ overrideBrowserslist: LEGACY_BROWSERS })],
-          },
-        }
-      : undefined,
+    css: isLegacy ? { postcss: { plugins: legacyCss } } : undefined,
     build: isLegacy
       ? { outDir, minify: 'terser', modulePreload: false }
       : {
@@ -108,6 +144,24 @@ export default defineConfig(({ mode }) => {
       ...(isLegacy
         ? [legacy({ targets: LEGACY_BROWSERS, renderModernChunks: false, additionalLegacyPolyfills: ['whatwg-fetch'] })]
         : []),
+      ...(isLegacy
+        ? [
+            {
+              name: 'legacy-stylesheet',
+              // The stylesheet leaves the bundle (so Vite doesn't inline it) and comes back as a plain <link>,
+              // before Vite sees the HTML (order: 'pre'), else it bundles it.
+              transformIndexHtml: {
+                order: 'pre',
+                handler: (html) =>
+                  html.replace(
+                    '<link rel="stylesheet" href="/src/styles.css">',
+                    '<link rel="stylesheet" href="/enplayer/styles.css">',
+                  ),
+              },
+              closeBundle: () => writeLegacyStylesheet(outDir, legacyCss),
+            },
+          ]
+        : []),
       {
         name: 'tizen-html-transform',
         closeBundle() {
@@ -117,7 +171,7 @@ export default defineConfig(({ mode }) => {
             .replace(/\s+type="module"/g, '')
             .replace(/\s+crossorigin/g, '')
             .replace(/\s+nomodule/g, '');
-          fs.writeFileSync(file, fixed);
+          fs.writeFileSync(file, diagHtmlHook(getDiagUrl())(fixed));
         },
       },
     ],

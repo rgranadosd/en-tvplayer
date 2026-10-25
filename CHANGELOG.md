@@ -13,6 +13,14 @@ All notable changes to RAFLIX IPTV (forked from EN TV Player) will be documented
 - `tizen/install.py` picks the package for the TV's Tizen version (`_tizen24` below 4.0).
 - Settings › About names the playback engine (Shaka Player, or Samsung AVPlay on the legacy package).
 
+- Legacy package hardened after the first try on a 2016 TV: `./` paths (SystemJS took `assets/…` for a package name
+  and the app never loaded), stylesheet as a linked `styles.css` (not inside the JavaScript), a "could not start"
+  message from the HTML alone after 20 s, and `install.py` pushing to `/opt/usr/apps/tmp` on Tizen 2.x.
+- Diagnostics for TVs without an inspector: `player/diag.local.json` + `node scripts/diag-server.mjs` (page errors,
+  loader outcome, app milestones, AVPlay results); nothing ships without the file.
+- `eslint-plugin-compat` on the legacy sources (Safari 7-era APIs) and `check:tizen24` resolving the packaged paths.
+- `tizen/install.py --no-launch` (install without opening the app) and `--uninstall`.
+
 ### Changed
 - The start-up black background and spinner are inline in `index.html`, painted before any script or stylesheet.
 

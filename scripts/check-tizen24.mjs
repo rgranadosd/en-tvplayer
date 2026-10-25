@@ -25,7 +25,6 @@ const packager = read('tizen/package.mjs');
 if (!packager.includes("LEGACY ? '2.4' : '4.0'")) fail('the legacy manifest does not target Tizen 2.4');
 if (!packager.includes("LEGACY ? '_tizen24' : ''"))
   fail('the legacy package name lacks _tizen24 (install.py needs it)');
-if (!packager.includes("LEGACY ? './' : '/'")) fail('the legacy package does not use ./ relative paths (SystemJS)');
 if (!read('player/vite.config.js').includes("'src/player-legacy.js'"))
   fail('the legacy build does not use player-legacy.js');
 
@@ -53,6 +52,23 @@ for (const name of ['E.closest', 'E.prepend', 'NodeList.prototype.forEach']) {
 
 const html = readFileSync(join(dist, 'index.html'), 'utf8');
 if (/type="module"|nomodule/.test(html)) fail('index.html still has module scripts');
+
+// As the TV sees it: the package's HTML (package.mjs turns /enplayer/ into ./) opened from file:///…/res/wgt/.
+// Every script, stylesheet and SystemJS entry must be a file in dist-legacy, and the entry must not be a bare
+// specifier (SystemJS error #8: what broke the first install on the 2016 TV).
+const replacement = /LEGACY \? '([^']*)' : '\/'/.exec(packager);
+const packaged = html.replace(/\/enplayer\//g, replacement ? replacement[1] : '');
+const refs = [...packaged.matchAll(/\b(src|href|data-src)="([^"$]+)"/g)].map((m) => ({ attr: m[1], ref: m[2] }));
+for (const { attr, ref } of refs) {
+  if (/^https?:/.test(ref)) continue;
+  if (attr !== 'href' && ref.endsWith('.js') && !ref.startsWith('./')) {
+    fail(`index.html loads "${ref}": not a ./ path (SystemJS takes it for a package name)`);
+  }
+  if (!existsSync(join(dist, ref))) fail(`index.html references "${ref}", which is not in dist-legacy`);
+}
+if (!refs.some((r) => r.ref.endsWith('styles.css')))
+  fail('index.html does not link styles.css (CSS must not depend on the JS loading)');
+if (!html.includes('launch-failed')) fail('index.html lacks the launch-failed fallback');
 const at = (s) => html.indexOf(s);
 if (!(
   at('compat.js') >= 0 &&
