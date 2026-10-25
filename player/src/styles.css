@@ -494,20 +494,6 @@ body {
   animation: spin 0.8s linear infinite;
 }
 
-#launch-spinner {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  z-index: 10000;
-  width: calc(64px * var(--tv-scale, 1));
-  height: calc(64px * var(--tv-scale, 1));
-  margin: calc(-32px * var(--tv-scale, 1)) 0 0 calc(-32px * var(--tv-scale, 1));
-  border: calc(6px * var(--tv-scale, 1)) solid rgba(255, 255, 255, 0.15);
-  border-top-color: #d3202a;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
 @keyframes spin {
   to {
     transform: rotate(360deg);

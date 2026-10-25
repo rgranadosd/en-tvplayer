@@ -20,7 +20,9 @@ const builtHtml = read('player/dist/index.html');
 const compat = read('player/dist/compat.js');
 
 if (!configXml.includes('required_version="4.0"')) fail('tizen/config.xml does not target Tizen 4.0');
-if (!packager.includes('required_version="4.0"')) fail('the generated manifest does not target Tizen 4.0');
+if (!packager.includes("LEGACY ? '2.4' : '4.0'") || !packager.includes('required_version="${REQUIRED_VERSION}"')) {
+  fail('the generated manifest does not target Tizen 4.0');
+}
 if (!vite.includes("target: 'chrome56'")) fail('Vite does not target Chromium 56');
 if (styles.includes('display: grid') || styles.includes('grid-gap:')) fail('CSS Grid remains in styles.css');
 if (styles.includes('height: 100vh')) fail('100vh remains in styles.css');

@@ -29,6 +29,8 @@ en-tvplayer/
 │   ├── src/
 │   │   ├── main.js      App entry point
 │   │   ├── player.js    Shaka Player wrapper
+│   │   ├── player-legacy.js  Same interface, AVPlay only: the legacy build (2016-2017 TVs) swaps it in
+│   │   ├── stage.js     Loading veil, error line and event log, shared by both players
 │   │   ├── avplay.js    Native AVPlay fallback (undecodable streams)
 │   │   ├── ui.js        Channel list + sidebar
 │   │   ├── settings.js  Settings page
@@ -55,6 +57,19 @@ en-tvplayer/
 ├── docs/                Project documentation
 └── README.md
 ```
+
+## 3b. Two packages, one code base
+
+- **Regular** (`npm run build`, `npm run tizen`): Tizen 4+ (2018+), Chromium 56, Shaka + AVPlay fallback. Checked by
+  `npm run check:tizen4`.
+- **Legacy** (`npm run build:legacy`, `npm run tizen:legacy` → `…_tizen24_….wgt`): Tizen 2.4/3 (2016-2017; the
+  UE55KS8000 "TV COMEDOR" is 2.4, WebKit r152340). `vite build --mode legacy` swaps `./player.js` for
+  `player-legacy.js` (AVPlay only, no Shaka), transpiles to ES5 with polyfills (`@vitejs/plugin-legacy`, fetch),
+  turns CSS custom properties into their `:root` values (`--tv-scale` fixed at 1.35, its floor) and adds `-webkit-`
+  prefixes; package paths are relative. Checked by `npm run check:tizen24` (ES5 syntax, no Shaka, no `var(--`,
+  compat.js polyfills, load order). DOM methods polyfills can't add go in `public/compat.js`, guarded.
+- Keep both working: the same `player.js`/`player-legacy.js` exports, and no `KeyboardEvent.key`-only handling (2016
+  has keyCode only: `SAMSUNG_KEY_CODES` in remote.js). `tizen/install.py` picks the package by the TV's Tizen version.
 
 ## 4. Workflow Rules
 

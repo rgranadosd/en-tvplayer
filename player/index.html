@@ -6,6 +6,19 @@
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>RAFLIX IPTV</title>
   <link rel="icon" type="image/png" href="/favicon.png">
+  <!-- Painted before any script or stylesheet (the legacy build's styles come with its JavaScript): black, and the
+       start-up spinner. Plain CSS with -webkit- prefixes, for every TV the app supports. -->
+  <style>
+    html, body { background: #000; }
+    #launch-spinner {
+      position: fixed; left: 50%; top: 50%; z-index: 10000;
+      width: 86px; height: 86px; margin: -51px 0 0 -51px;
+      border: 8px solid rgba(255, 255, 255, 0.15); border-top-color: #d3202a; border-radius: 50%;
+      -webkit-animation: launch-spin 0.8s linear infinite; animation: launch-spin 0.8s linear infinite;
+    }
+    @-webkit-keyframes launch-spin { to { -webkit-transform: rotate(360deg); } }
+    @keyframes launch-spin { to { transform: rotate(360deg); } }
+  </style>
   <link rel="stylesheet" href="/src/styles.css">
   <script src="/compat.js"></script>
   <!-- Samsung AVPlay (native fallback for streams the browser can't render).

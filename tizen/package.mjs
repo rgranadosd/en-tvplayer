@@ -6,7 +6,11 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
-const DIST = join(ROOT, 'player', 'dist');
+// --legacy: the 2016-2017 TVs' package (Tizen 2.4/3), from `npm run build:legacy` (player/dist-legacy): native
+// AVPlay, ES5. Its name carries `_tizen24`, which tizen/install.py uses to pick it for those TVs.
+const LEGACY = process.argv.includes('--legacy');
+const REQUIRED_VERSION = LEGACY ? '2.4' : '4.0';
+const DIST = join(ROOT, 'player', LEGACY ? 'dist-legacy' : 'dist');
 const TIZEN = __dirname;
 
 const PKG = 'IPTVPlayer'; // Must be EXACTLY 10 chars!
@@ -19,7 +23,7 @@ const APP_VERSION = playerPkg.version;
 const commitHash = execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trim();
 const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
 const versionType = branch === 'main' ? 'stable' : 'beta';
-const WGT_NAME = `EN-IPTV_Player_v${APP_VERSION}_${commitHash}.wgt`;
+const WGT_NAME = `EN-IPTV_Player_v${APP_VERSION}${LEGACY ? '_tizen24' : ''}_${commitHash}.wgt`;
 const OUTPUT_DIR = join(ROOT, versionType);
 if (!existsSync(OUTPUT_DIR)) mkdirSync(OUTPUT_DIR, { recursive: true });
 
@@ -113,7 +117,7 @@ console.log(` SDB: ${SDB}`);
 // ─── Step 2: Ensure dist/ exists ─────────────────────────────────────────
 
 if (!existsSync(DIST)) {
-  console.log('\n dist/ not found. Run: npm run build\n');
+  console.log(`\n ${LEGACY ? 'dist-legacy/ not found. Run: npm run build:legacy' : 'dist/ not found. Run: npm run build'}\n`);
   process.exit(1);
 }
 
@@ -157,7 +161,7 @@ const configXml = `<?xml version="1.0" encoding="UTF-8"?>
         version="${APP_VERSION.split('-')[0]}"
         viewmodes="maximized">
   <access origin="*" subdomains="true"/>
-  <tizen:application id="${PKG}.IPTV" package="${PKG}" required_version="4.0"/>
+  <tizen:application id="${PKG}.IPTV" package="${PKG}" required_version="${REQUIRED_VERSION}"/>
   <author href="http://iptvplayer">EN-IPTV Player</author>
   <content src="index.html"/>
   <feature name="http://tizen.org/feature/screen.size.all"/>
@@ -178,10 +182,11 @@ writeFileSync(join(TEMP, 'config.xml'), configXml);
 // Copy app files
 cpSync(DIST, TEMP, { recursive: true });
 
-// Fix paths: strip /enplayer/ base prefix (WGT serves from root)
+// Fix paths: strip /enplayer/ base prefix (WGT serves from root). Legacy: relative paths, which every engine
+// resolves against the app's folder (2016's runtime isn't known to map "/" there).
 const htmlPath = join(TEMP, 'index.html');
 let html = readFileSync(htmlPath, 'utf-8');
-html = html.replace(/\/enplayer\//g, '/');
+html = html.replace(/\/enplayer\//g, LEGACY ? '' : '/');
 writeFileSync(htmlPath, html);
 
 // Copy app icon (spec-size 512x423 launcher art — not the small test icon)

@@ -2,6 +2,20 @@
 
 All notable changes to RAFLIX IPTV (forked from EN TV Player) will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- A package for 2016-2017 TVs (Tizen 2.4/3, e.g. UE55KS8000): `npm run build:legacy && npm run tizen:legacy` →
+  `…_tizen24_….wgt`. Their WebKit can't run Shaka, so every channel plays through Samsung's native AVPlay
+  (`player-legacy.js`, same interface as `player.js`); JavaScript in ES5 with polyfills, CSS without custom
+  properties and with `-webkit-` prefixes, relative paths, `required_version="2.4"`. `npm run check:tizen24` checks it.
+- Color and media keys also by their Tizen key code (2016 TVs have no `KeyboardEvent.key`).
+- `tizen/install.py` picks the package for the TV's Tizen version (`_tizen24` below 4.0).
+- Settings › About names the playback engine (Shaka Player, or Samsung AVPlay on the legacy package).
+
+### Changed
+- The start-up black background and spinner are inline in `index.html`, painted before any script or stylesheet.
+
 ## [1.0.0] - 2026-10-25
 
 ### Added

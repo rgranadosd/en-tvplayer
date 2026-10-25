@@ -1094,7 +1094,9 @@ function renderAboutCard() {
     APP_VERSION +
     '</div></div>';
   html +=
-    '<div class="toggle-row"><div><div class="toggle-label">Engine</div></div><div class="toggle-value">Shaka Player</div></div>';
+    '<div class="toggle-row"><div><div class="toggle-label">Engine</div></div><div class="toggle-value">' +
+    player.engineName() +
+    '</div></div>';
   html +=
     '<div class="toggle-row"><div><div class="toggle-label">Native playback</div></div><div class="toggle-value">' +
     (player.isNativeAvailable() ? 'Available' : 'Not available') +

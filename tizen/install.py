@@ -120,11 +120,24 @@ class Sdb:
             raise ConnectionError("TV did not accept the widget")
 
 
-def newest_widget():
-    widgets = [*ROOT.glob("beta/*.wgt"), *ROOT.glob("stable/*.wgt")]
+def newest_widget(legacy):
+    """The newest package for this TV: the legacy build (`_tizen24` in its name) for Tizen 2.4/3, the other for 4+."""
+    widgets = [
+        path
+        for path in [*ROOT.glob("beta/*.wgt"), *ROOT.glob("stable/*.wgt")]
+        if ("_tizen24_" in path.name) == legacy
+    ]
     if not widgets:
-        raise SystemExit("Build first with: TIZEN_CERT_PROFILE=<profile> npm run tizen")
+        script = "tizen:legacy" if legacy else "tizen"
+        raise SystemExit(f"Build first with: TIZEN_CERT_PROFILE=<profile> npm run {script}")
     return max(widgets, key=lambda path: path.stat().st_mtime)
+
+
+def is_legacy(platform_version):
+    try:
+        return float(".".join(platform_version.split(".")[:2])) < 4.0
+    except ValueError:
+        return False
 
 
 def read_manifest(widget):
@@ -141,13 +154,13 @@ def main():
     if len(sys.argv) != 2:
         raise SystemExit("Usage: python3 tizen/install.py <TV-IP>")
 
-    widget = newest_widget()
+    client = Sdb(sys.argv[1])
+    capabilities = client.capabilities()
+    widget = newest_widget(is_legacy(capabilities.get("platform_version", "")))
     manifest = read_manifest(widget)
     application = re.search(r"<tizen:application[^>]*>", manifest).group(0)
     app_id = re.search(r'\bid="([^"]+)"', application).group(1)
     package_id = re.search(r'\bpackage="([^"]+)"', application).group(1)
-    client = Sdb(sys.argv[1])
-    capabilities = client.capabilities()
     remote = capabilities.get("sdk_toolpath", "/home/owner/share/tmp/sdk_tools").rstrip("/")
     remote += f"/{widget.name}"
 

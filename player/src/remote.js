@@ -2,6 +2,22 @@ let onKeyAction = null;
 let numberBuffer = '';
 let numberTimeout = null;
 
+// Tizen key codes of the color and media keys, for browsers without KeyboardEvent.key.
+const SAMSUNG_KEY_CODES = {
+  403: 'red',
+  404: 'green',
+  405: 'yellow',
+  406: 'blue',
+  10252: 'playpause',
+  415: 'play',
+  19: 'pause',
+  413: 'stop',
+  417: 'next',
+  412: 'prev',
+  10233: 'next',
+  10232: 'prev',
+};
+
 export function init(callback) {
   onKeyAction = callback;
 
@@ -128,18 +144,49 @@ function handleKeyDown(e) {
 
   // Prevent default for handled keys
   const handled = [
-    'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
-    'Enter', 'Escape', 'Backspace', ' ',
-    'r', 'R',
-    'ChUp', 'ChDown', 'ChannelUp', 'ChannelDown', 'GoBack',
-    'MediaPlayPause', 'MediaStop',
-    'MediaTrackPrevious', 'MediaTrackNext',
-    'MediaFastForward', 'MediaRewind',
-    'ColorRed', 'ColorGreen', 'ColorYellow', 'ColorBlue',
-    'ColorF0Red', 'ColorF1Green', 'ColorF2Yellow', 'ColorF3Blue',
-    'MediaPlay', 'MediaPause',
-    37, 38, 39, 40, 13, 27, 32, 82, 10009, // keyCodes
-    427, 428, // CH Up / CH Down (Tizen keyCodes)
+    'ArrowUp',
+    'ArrowDown',
+    'ArrowLeft',
+    'ArrowRight',
+    'Enter',
+    'Escape',
+    'Backspace',
+    ' ',
+    'r',
+    'R',
+    'ChUp',
+    'ChDown',
+    'ChannelUp',
+    'ChannelDown',
+    'GoBack',
+    'MediaPlayPause',
+    'MediaStop',
+    'MediaTrackPrevious',
+    'MediaTrackNext',
+    'MediaFastForward',
+    'MediaRewind',
+    'ColorRed',
+    'ColorGreen',
+    'ColorYellow',
+    'ColorBlue',
+    'ColorF0Red',
+    'ColorF1Green',
+    'ColorF2Yellow',
+    'ColorF3Blue',
+    'MediaPlay',
+    'MediaPause',
+    37,
+    38,
+    39,
+    40,
+    13,
+    27,
+    32,
+    82,
+    10009, // keyCodes
+    427,
+    428, // CH Up / CH Down (Tizen keyCodes)
+    ...Object.keys(SAMSUNG_KEY_CODES).map(Number), // color/media keys by code
   ];
 
   if (handled.includes(key) || handled.includes(e.keyCode)) {
@@ -148,29 +195,29 @@ function handleKeyDown(e) {
 
   // Samsung remote special keys (some TVs use these)
   const samsungKeys = {
-    'ColorRed': 'red',
-    'ColorGreen': 'green',
-    'ColorYellow': 'yellow',
-    'ColorBlue': 'blue',
-    'ColorF0Red': 'red',
-    'ColorF1Green': 'green',
-    'ColorF2Yellow': 'yellow',
-    'ColorF3Blue': 'blue',
-    'MediaPlayPause': 'playpause',
-    'MediaPlay': 'play',
-    'MediaPause': 'pause',
-    'MediaStop': 'stop',
-    'MediaTrackNext': 'next',
-    'MediaTrackPrevious': 'prev',
-    'MediaFastForward': 'next',
-    'MediaRewind': 'prev',
-    'ChUp': 'channelUp',
-    'ChDown': 'channelDown',
-    'ChannelUp': 'channelUp',
-    'ChannelDown': 'channelDown',
-    'VolumeUp': 'volumeUp',
-    'VolumeDown': 'volumeDown',
-    'VolumeMute': 'mute',
+    ColorRed: 'red',
+    ColorGreen: 'green',
+    ColorYellow: 'yellow',
+    ColorBlue: 'blue',
+    ColorF0Red: 'red',
+    ColorF1Green: 'green',
+    ColorF2Yellow: 'yellow',
+    ColorF3Blue: 'blue',
+    MediaPlayPause: 'playpause',
+    MediaPlay: 'play',
+    MediaPause: 'pause',
+    MediaStop: 'stop',
+    MediaTrackNext: 'next',
+    MediaTrackPrevious: 'prev',
+    MediaFastForward: 'next',
+    MediaRewind: 'prev',
+    ChUp: 'channelUp',
+    ChDown: 'channelDown',
+    ChannelUp: 'channelUp',
+    ChannelDown: 'channelDown',
+    VolumeUp: 'volumeUp',
+    VolumeDown: 'volumeDown',
+    VolumeMute: 'mute',
   };
 
   // Arrow keys
@@ -220,9 +267,10 @@ function handleKeyDown(e) {
     return;
   }
 
-  // Samsung special keys
-  if (samsungKeys[key]) {
-    onKeyAction(samsungKeys[key]);
+  // Samsung special keys (2016 WebKit has no KeyboardEvent.key: by their Tizen key code there)
+  const special = samsungKeys[key] || SAMSUNG_KEY_CODES[e.keyCode];
+  if (special) {
+    onKeyAction(special);
     return;
   }
 

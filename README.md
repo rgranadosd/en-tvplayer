@@ -46,6 +46,18 @@ tizen install -n EN-IPTV_Player.wgt -s <TV_IP>
 
 > Updates must be signed with the same key — reinstalling never touches your channels or settings.
 
+### 2016-2017 TVs (Tizen 2.4 / 3)
+
+Their browser (WebKit, ES5 only) can't run the regular player, so they get their own package from the same code:
+every channel plays through Samsung's native player (AVPlay). Unencrypted streams play (HLS, MPEG-TS…); DRM
+(ClearKey, PlayReady in the browser) and quality/audio-track menus don't, since they need the regular player.
+
+```bash
+npm run build:legacy && npm run check:tizen24
+TIZEN_CERT_PROFILE=<profile> npm run tizen:legacy      # → beta/…_tizen24_….wgt
+python3 tizen/install.py <TV_IP>                        # picks the package for the TV's Tizen version
+```
+
 ---
 
 ## ✨ Features
