@@ -728,9 +728,9 @@ function restoreLastSession() {
       }
     }
   } catch {}
-  // The stream first, the channel list after: drawing the group view and the list took ~4 s on 2016 TVs, all of it
-  // before the stream was even asked for. Drawn once the player has opened it, while it loads; the list marks the
-  // channel without tuning it again.
+  // The stream first, the channel list after: drawing the group view and the list takes ~3 s on 2016 TVs and blocks
+  // the app — before the tune it delayed asking for the stream, during it the start of playback (AVPlay waits for
+  // the app's play() once prepared). Drawn once the picture is up; the list marks the channel without a second tune.
   handleChannelSelect(channels[idx], () => {
     const t0 = Date.now();
     if (view) ui.showGroupChannels(view);
@@ -739,7 +739,7 @@ function restoreLastSession() {
     try {
       saveSettings({ lastGroup: selectedGroup });
     } catch {}
-    diag('resume: group view and list drawn after the tune started, ' + (Date.now() - t0) + 'ms');
+    diag('resume: group view and list drawn after the picture, ' + (Date.now() - t0) + 'ms');
   });
 }
 
@@ -922,7 +922,7 @@ function forcePaint() {
   } catch {}
 }
 
-// afterStart: called once the player has the stream open (the boot draws the channel list then).
+// afterStart: called once the tune is answered — picture up, or given up (the boot draws the channel list then).
 async function handleChannelSelect(channel, afterStart) {
   // Record the tune intent FIRST (before the paint-delay await below): the
   // background refresh may land while this tune is still yielding, and it
@@ -989,9 +989,8 @@ async function handleChannelSelect(channel, afterStart) {
   ui.setProxyToggleLabel(!!(getSettings().proxyChannels || {})[channel.url]);
   ui.setFavoriteLabel(favorites.isFavorite(channel));
   tuneInFlight = true;
-  const loading = player.loadChannel(channel);
+  const ok = await player.loadChannel(channel);
   if (afterStart) afterStart();
-  const ok = await loading;
   tuneInFlight = false;
   tuneSucceeded = ok === true;
   if (ok && player.LIGHT_BOOT) hideBootSplash(); // slow TVs: off as soon as the channel is up, not after the refresh
