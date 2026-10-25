@@ -2,7 +2,7 @@
 
 All notable changes to RAFLIX IPTV (forked from EN TV Player) will be documented in this file.
 
-## [Unreleased]
+## [1.0.0] - 2026-10-25
 
 ### Added
 - First stable RAFLIX IPTV: everything in 1.0.0-rc.1 to rc.3 (new name and logo, favorites shared through the favorites API, opening straight to a channel from Raflix, what's on now from the playlist's guide).
