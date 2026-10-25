@@ -43,7 +43,10 @@ en-tvplayer/
 │   └── vite.config.js   Vite configuration
 ├── tizen/               WGT build tools
 ├── scripts/             Release automation (`npm run release`)
-├── favorites/           Favorites API (server.mjs → favorites.yml), read by Raflix's "Directos" tab
+├── favorites/           Favorites API (server.mjs → favorites.yml; epg.mjs: now/next from the XMLTV guide),
+│                        read by Raflix's "Directos" tab. Runs with Docker Compose from a clone of this repo on the
+│                        always-on machine: `git pull && docker compose up -d --force-recreate` there; `.env`
+│                        (EPG_URL) and `data/` stay out of git
 ├── proxy/               Desktop testing relay (CORS + Origin/Referer/UA fix)
 │   ├── proxy.mjs        HTTPS relay — prefix channel URLs to test DRM on desktop
 │   ├── header-rules.json Hostname → header map
@@ -81,8 +84,10 @@ en-tvplayer/
 | Back | Close menu |
 | Volume ↑/↓ | Adjust volume |
 | Red | Add/remove favorite (playing channel, or the focused one in the list) — needs `favorites/` running |
+| → › Add to Favorites | The same from the Menu, for remotes without color keys |
 
-Opened by another app with Tizen app-control data `channel` (+ `group`), the app tunes that channel by name.
+Opened by another app with Tizen app-control data `channel` (+ `group`), the app tunes that channel by name, with no
+splash and no What's New (`quietBoot` in `main.js`; a spinner covers the start-up instead).
 
 ## 6. Key Features
 

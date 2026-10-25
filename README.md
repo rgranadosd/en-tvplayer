@@ -1,4 +1,6 @@
-# 📺 EN TV Player
+# 📺 RAFLIX IPTV
+
+*Forked from [EN TV Player](https://github.com/Nur-allhi/en-tvplayer) 3.2.0: everything below still applies, plus favorites shared with Raflix and what's on now (see *Favorites, Raflix and what's on now* below).*
 
 **The IPTV player for Samsung Tizen TVs** — plays DRM-protected channels other players can't, with no server required.
 
@@ -58,6 +60,34 @@ tizen install -n EN-IPTV_Player.wgt -s <TV_IP>
 | 📶 Smart playback | Auto quality, stream-format auto-detection, live-token retry |
 | 🔔 Update checker | Opt-in notice when a new version is available |
 | 🎮 Remote-first | Full Samsung remote support incl. color keys & channel up/down |
+| ❤️ Favorites | Menu (→) › Add to Favorites, or the Red key; a ♥ marks them in the list |
+| 🏠 Raflix | Favorites become Raflix's Directos cards, with what's on now; a card opens the channel here, no splash |
+
+---
+
+## ❤️ Favorites, Raflix and what's on now
+
+A Samsung app can't read another app's data, so the favorites live in a small API on an always-on machine at home
+([`favorites/`](favorites/README.md): Node, no dependencies, Docker Compose, one YAML file). Three pieces:
+
+| | What it does |
+|---|---|
+| **RAFLIX IPTV** (this app) | Menu (→) › **Add to Favorites** / **Remove from Favorites** (or the Red key) saves the channel playing — the focused one in the channel list with the Red key — with its name, group, logo and guide ids (`tvg-id`). |
+| **Favorites API** | Keeps them in `favorites.yml` and, with `EPG_URL` (the playlist's `url-tvg`), reads the XMLTV guide every 30 minutes and adds what's on **now** and **next** to each one. |
+| **Raflix** ([free-my-tv](https://github.com/rgranadosd/free-my-tv)) | Its **Directos** tab shows one card per favorite: logo, programme, times, what's next and a progress bar. OK opens this app straight on that channel (Tizen app control `channel` + `group`), with a spinner and no splash. |
+
+**Set up**
+
+1. **API** on the always-on machine, from a clone of this repo: `cd favorites`, put `EPG_URL=<url-tvg>` in `.env`
+   (optional; it can carry a login, so it stays out of git) and `docker compose up -d`. Details in
+   [favorites/README.md](favorites/README.md).
+2. **This app:** `player/favorites.local.json` (not in git) with `{"url": "http://<machine-ip>:5002"}`, then build
+   and install.
+3. **Raflix:** `iptv_favorites_url=http://<machine-ip>:5002` in its `config.properties`, then build and install.
+
+Channels are matched by name (stream URLs rotate). A playlist can repeat a channel in event groups under ids with no
+guide, so a favorite keeps every `tvg-id` its name has, and favorites saved before the guide get them on the next
+launch.
 
 ---
 
@@ -82,7 +112,7 @@ Samsung TVs are closed hardware with real limits — here is what the app can an
 | Enter | Select channel |
 | Back | Close menu / exit |
 | Volume ↑/↓ | Adjust volume |
-| Red / Green / Yellow / Blue | Green: groups · Blue: settings (Red/Yellow reserved) |
+| Red / Green / Yellow / Blue | Red: add/remove favorite · Green: groups · Blue: settings (Yellow reserved) |
 | Channel Up/Down | Previous / next channel |
 | Numbers | Jump to channel |
 
