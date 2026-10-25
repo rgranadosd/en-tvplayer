@@ -169,6 +169,15 @@ const LAST_SEEN_KEY = 'en_last_seen_version';
 // RAFLIX IPTV's own history; EN IPTV's (what it was forked from) is in CHANGELOG.md.
 const CHANGELOG = [
   {
+    version: '1.0.0',
+    sections: [
+      {
+        type: 'added',
+        items: ['RAFLIX IPTV 1.0.0: the first stable version'],
+      },
+    ],
+  },
+  {
     version: '1.0.0-rc.3',
     sections: [
       {
