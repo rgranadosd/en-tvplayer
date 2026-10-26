@@ -205,3 +205,11 @@ export function playlistsToReplace(saved, extra, alreadyAdded) {
   });
   return out;
 }
+
+// Raflix's server and this TV's name, as typed in Settings: why they can't be saved, or '' when they can. Empty means
+// "the build's value".
+export function serverFieldsError(url, tv) {
+  if (url && !/^https?:\/\/[^\s/]+/.test(url)) return 'The server must start with http:// or https://';
+  if (tv && !/^[a-z0-9-]{1,30}$/.test(tv)) return 'TV name: lowercase letters, digits and dashes';
+  return '';
+}

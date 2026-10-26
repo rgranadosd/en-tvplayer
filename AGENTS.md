@@ -39,6 +39,7 @@ en-tvplayer/
 │   │   ├── config.js    localStorage settings
 │   │   ├── utils.js     Shared utilities
 │   │   ├── favorites.js Favorites (Red key) via the favorites API + app-control channel requests
+│   │   ├── raflix-server.js The favorites API's address and this TV's name there (Settings > Channel Source; the build's until changed)
 │   │   ├── logic.js     Pure DOM-free logic (testable, no side effects)
 │   │   └── *.test.js    Vitest suites, colocated per module (§10)
 │   ├── public/          Static assets

@@ -1,14 +1,14 @@
 // Favorites, kept by the favorites API (favorites/server.mjs, on an always-on machine) so other apps on the TV
 // (Raflix's "Directos" tab) can read them: a Tizen app can't read another's storage. A copy stays in localStorage
-// for when the server doesn't answer. The server's address comes from player/favorites.local.json at build time.
+// for when the server doesn't answer. The server's address: Settings > Channel Source, or the build's
+// (player/favorites.local.json).
 import { timedFetch } from './utils.js';
 import { guideIds } from './logic.js';
+import { serverUrl, tvName } from './raflix-server.js';
 
 const CACHE_KEY = 'en_favorites';
-const BASE = String(__FAVORITES_URL__ || '').replace(/\/+$/, '');
-// The TV this build is for (RAFLIX_TV): the server keeps its own favorites and recent channels.
-const TV = String(__RAFLIX_TV__ || '');
-const tvParam = (sep) => (TV ? sep + 'tv=' + encodeURIComponent(TV) : '');
+// The server and this TV's name there (Settings, or the build's): the server keeps each TV's favorites and recent.
+const tvParam = (sep) => (tvName() ? sep + 'tv=' + encodeURIComponent(tvName()) : '');
 
 let list = readCache();
 
@@ -30,7 +30,7 @@ function keep(next) {
 }
 
 export function isConfigured() {
-  return !!BASE;
+  return !!serverUrl();
 }
 
 export function isFavorite(channel) {
@@ -38,9 +38,9 @@ export function isFavorite(channel) {
 }
 
 export async function refreshFavorites() {
-  if (!BASE) return list;
+  if (!serverUrl()) return list;
   try {
-    const res = await timedFetch(BASE + '/favorites' + tvParam('?'), {}, 5000).promise;
+    const res = await timedFetch(serverUrl() + '/favorites' + tvParam('?'), {}, 5000).promise;
     if (res.ok) keep((await res.json()).favorites);
   } catch {}
   return list;
@@ -48,7 +48,7 @@ export async function refreshFavorites() {
 
 function post(fav) {
   return timedFetch(
-    BASE + '/favorites' + tvParam('?'),
+    serverUrl() + '/favorites' + tvParam('?'),
     { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fav) },
     5000,
   ).promise;
@@ -57,7 +57,7 @@ function post(fav) {
 // Adds or removes the channel; resolves to its new state, or null when the server couldn't save it. `channels`
 // (the playlist) gives the favorite its guide ids, for what's on now in Raflix.
 export async function toggleFavorite(channel, channels) {
-  if (!BASE || !channel) return null;
+  if (!serverUrl() || !channel) return null;
   const adding = !isFavorite(channel);
   try {
     const res = adding
@@ -68,7 +68,7 @@ export async function toggleFavorite(channel, channels) {
           tvg: guideIds(channels, channel.name),
         })
       : await timedFetch(
-          BASE + '/favorites?name=' + encodeURIComponent(channel.name) + tvParam('&'),
+          serverUrl() + '/favorites?name=' + encodeURIComponent(channel.name) + tvParam('&'),
           { method: 'DELETE' },
           5000,
         ).promise;
@@ -82,9 +82,9 @@ export async function toggleFavorite(channel, channels) {
 
 // The channel was watched: first in the server's "recent", which Raflix's "Directos" tab shows before the favorites.
 export function noteWatched(channel, channels) {
-  if (!BASE || !channel) return;
+  if (!serverUrl() || !channel) return;
   timedFetch(
-    BASE + '/recent' + tvParam('?'),
+    serverUrl() + '/recent' + tvParam('?'),
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
