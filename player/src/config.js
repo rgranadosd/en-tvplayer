@@ -71,6 +71,11 @@ export function getSettings() {
     if (swaps.length) {
       for (const { index, playlist } of swaps) s.playlists[index] = { ...s.playlists[index], ...playlist };
       s.extraPlaylistsAdded = [...(s.extraPlaylistsAdded || []), ...swaps.map((w) => w.playlist.url)];
+      // The channels kept from the active one carry the old login in their URLs: downloaded again at start.
+      if (swaps.some((w) => w.index === s.activePlaylistIndex)) {
+        s.channels = [];
+        s.channelsFetched = null;
+      }
       try {
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
       } catch {}
