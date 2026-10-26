@@ -10,6 +10,9 @@
 //   DELETE /favorites?name=…                       → removes one
 //   POST   /recent     {name, group, logo, tvg}    → the TV app watched it: first in "recent" (up to 20)
 //
+// ?tv=<name> (comedor, dormitorio…) on any of them: that TV's own lists, in <data>/<name>/. A TV starts with the
+// shared favorites (the ones from before lists per TV); without ?tv, the shared lists.
+//
 // tvg: the channel's guide ids (tvg-id), comma separated: the same channel can come several times in a playlist,
 // and only some of its copies have a guide. now/next: {title, start, stop} (epoch ms), from the guide.
 import http from 'node:http';
@@ -76,6 +79,7 @@ function load(file) {
 }
 
 function save(file, list, key) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
   const tmp = file + '.tmp';
   fs.writeFileSync(tmp, toYaml(list, key));
   fs.renameSync(tmp, file);
@@ -117,11 +121,23 @@ function readBody(req, done) {
   });
 }
 
-export function createServer(file, guide = null) {
-  const recentFile = path.join(path.dirname(file), 'recent.yml');
+// The files of a TV's lists (or the shared ones); null for a name that isn't a plain word.
+export function filesFor(file, tv) {
+  if (!tv) return { favorites: file, recent: path.join(path.dirname(file), 'recent.yml'), start: file };
+  if (!/^[a-z0-9-]{1,30}$/.test(tv)) return null;
+  const dir = path.join(path.dirname(file), tv);
+  return { favorites: path.join(dir, 'favorites.yml'), recent: path.join(dir, 'recent.yml'), start: file };
+}
+
+export function createServer(sharedFile, guide = null) {
   return http.createServer((req, res) => {
     const url = new URL(req.url, 'http://x');
     if (req.method === 'OPTIONS') return send(res, 204);
+    const files = filesFor(sharedFile, url.searchParams.get('tv'));
+    if (!files) return send(res, 400, { error: 'tv: letters, digits and dashes' });
+    const file = files.favorites, recentFile = files.recent;
+    // A TV's favorites start as the shared ones, until it changes them.
+    const loadFavorites = () => load(fs.existsSync(file) ? file : files.start);
     if (url.pathname === '/recent' && req.method === 'POST') {
       return readBody(req, (fav) => {
         if (!fav) return send(res, 400, { error: 'a JSON body with a name is required' });
@@ -132,19 +148,19 @@ export function createServer(file, guide = null) {
     }
     if (url.pathname !== '/favorites') return send(res, 404, { error: 'not found' });
     if (req.method === 'GET') {
-      return send(res, 200, { favorites: withGuide(load(file), guide), recent: withGuide(load(recentFile), guide) });
+      return send(res, 200, { favorites: withGuide(loadFavorites(), guide), recent: withGuide(load(recentFile), guide) });
     }
     if (req.method === 'DELETE') {
       const name = url.searchParams.get('name');
       if (!name) return send(res, 400, { error: 'name is required' });
-      const list = load(file).filter((f) => f.name !== name);
+      const list = loadFavorites().filter((f) => f.name !== name);
       save(file, list);
       return send(res, 200, { favorites: withGuide(list, guide) });
     }
     if (req.method !== 'POST') return send(res, 405, { error: 'method not allowed' });
     readBody(req, (fav) => {
       if (!fav) return send(res, 400, { error: 'a JSON body with a name is required' });
-      const list = load(file);
+      const list = loadFavorites();
       const at = list.findIndex((f) => f.name === fav.name);
       if (at >= 0) list[at] = fav;
       else list.push(fav);

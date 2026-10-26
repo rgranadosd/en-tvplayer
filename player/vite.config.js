@@ -117,6 +117,7 @@ export default defineConfig(({ command, mode }) => {
       __APP_VERSION__: JSON.stringify(getAppVersion()),
       __EXTRA_PLAYLISTS__: JSON.stringify(getExtraPlaylists(command === 'build')),
       __FAVORITES_URL__: JSON.stringify(getFavoritesUrl()),
+      __RAFLIX_TV__: JSON.stringify(process.env.RAFLIX_TV || ''),
       __DIAG_URL__: JSON.stringify(getDiagUrl()),
     },
     root: '.',

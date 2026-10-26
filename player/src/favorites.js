@@ -6,6 +6,9 @@ import { guideIds } from './logic.js';
 
 const CACHE_KEY = 'en_favorites';
 const BASE = String(__FAVORITES_URL__ || '').replace(/\/+$/, '');
+// The TV this build is for (RAFLIX_TV): the server keeps its own favorites and recent channels.
+const TV = String(__RAFLIX_TV__ || '');
+const tvParam = (sep) => (TV ? sep + 'tv=' + encodeURIComponent(TV) : '');
 
 let list = readCache();
 
@@ -37,7 +40,7 @@ export function isFavorite(channel) {
 export async function refreshFavorites() {
   if (!BASE) return list;
   try {
-    const res = await timedFetch(BASE + '/favorites', {}, 5000).promise;
+    const res = await timedFetch(BASE + '/favorites' + tvParam('?'), {}, 5000).promise;
     if (res.ok) keep((await res.json()).favorites);
   } catch {}
   return list;
@@ -45,7 +48,7 @@ export async function refreshFavorites() {
 
 function post(fav) {
   return timedFetch(
-    BASE + '/favorites',
+    BASE + '/favorites' + tvParam('?'),
     { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fav) },
     5000,
   ).promise;
@@ -64,8 +67,11 @@ export async function toggleFavorite(channel, channels) {
           logo: channel.logo || '',
           tvg: guideIds(channels, channel.name),
         })
-      : await timedFetch(BASE + '/favorites?name=' + encodeURIComponent(channel.name), { method: 'DELETE' }, 5000)
-          .promise;
+      : await timedFetch(
+          BASE + '/favorites?name=' + encodeURIComponent(channel.name) + tvParam('&'),
+          { method: 'DELETE' },
+          5000,
+        ).promise;
     if (!res.ok) return null;
     keep((await res.json()).favorites);
     return adding;
@@ -78,7 +84,7 @@ export async function toggleFavorite(channel, channels) {
 export function noteWatched(channel, channels) {
   if (!BASE || !channel) return;
   timedFetch(
-    BASE + '/recent',
+    BASE + '/recent' + tvParam('?'),
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
