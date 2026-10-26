@@ -156,8 +156,8 @@ console.log('\n Building .wgt...');
 mkdirSync(TEMP, { recursive: true });
 
 // The icon's name in the package. The 2016 Smart Hub kept the old icon in its home bar through an update and a
-// reinstall (only Apps showed the new one): another file name there makes it a new icon.
-const ICON = LEGACY ? 'raflix-bar.png' : 'icon.png';
+// reinstall (only Apps showed the new one): another file name there makes it a new icon. Both packages, the same.
+const ICON = 'raflix-bar.png';
 
 // Config with 10-char package name
 const configXml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -196,9 +196,9 @@ let html = readFileSync(htmlPath, 'utf-8');
 html = html.replace(/\/enplayer\//g, LEGACY ? './' : '/');
 writeFileSync(htmlPath, html);
 
-// Copy app icon (spec-size 512x423 launcher art — not the small test icon). The 2016-2017 Smart Hub stretches it to
-// fill its ~1.83:1 bar tile (the R came out squashed): the legacy package takes a 512x280 one drawn for that tile
-// (icons/raflix-iptv-icon-legacy-512x280.svg).
+// Copy app icon: the RAFLIX IPTV wordmark, spec-size 512x423 (icons/raflix-iptv-icon-512x423.svg). The 2016-2017
+// Smart Hub stretches it to fill its ~1.83:1 bar tile (the R came out squashed): the legacy package takes the same
+// art at 512x280, drawn for that tile (icons/raflix-iptv-icon-legacy-512x280.svg).
 cpSync(join(TIZEN, LEGACY ? 'icon-legacy.png' : 'icon.png'), join(TEMP, ICON));
 
 // Create unsigned ZIP via Python helper
