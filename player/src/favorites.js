@@ -74,6 +74,25 @@ export async function toggleFavorite(channel, channels) {
   }
 }
 
+// The channel was watched: first in the server's "recent", which Raflix's "Directos" tab shows before the favorites.
+export function noteWatched(channel, channels) {
+  if (!BASE || !channel) return;
+  timedFetch(
+    BASE + '/recent',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: channel.name,
+        group: channel.group || '',
+        logo: channel.logo || '',
+        tvg: guideIds(channels, channel.name),
+      }),
+    },
+    5000,
+  ).promise.catch(() => {});
+}
+
 // Favorites saved without guide ids (before the EPG) get them from the playlist, once.
 export async function completeGuideIds(channels) {
   for (const fav of list.filter((f) => !f.tvg)) {

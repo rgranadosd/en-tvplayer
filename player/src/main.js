@@ -32,6 +32,9 @@ let lastIntent = null;
 // Fast-zap sequence: overlapping tune bodies from a burst of presses share
 // one video element — only the latest press may touch the player.
 let tuneSeq = 0;
+// A channel on screen this long counts as watched (the favorites server's "recent"); zapping past it doesn't.
+const WATCHED_MS = 10000;
+let watchedTimer = null;
 
 /* Responsive TV scaling: detect screen size and set CSS variable */
 function applyResponsiveScale() {
@@ -339,6 +342,7 @@ async function init() {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       hiddenAtSeq = tuneSeq;
+      clearTimeout(watchedTimer);
       player.stop();
       return;
     }
@@ -928,6 +932,7 @@ async function handleChannelSelect(channel, afterStart) {
   // background refresh may land while this tune is still yielding, and it
   // needs the latest intent to decide on a fresh-URL re-tune.
   const mySeq = ++tuneSeq;
+  clearTimeout(watchedTimer);
   hideLaunchSpinner();
   diag('tune ' + channel.name);
   ui.flashNowPlaying();
@@ -993,6 +998,7 @@ async function handleChannelSelect(channel, afterStart) {
   if (afterStart) afterStart();
   tuneInFlight = false;
   tuneSucceeded = ok === true;
+  if (ok && mySeq === tuneSeq) watchedTimer = setTimeout(() => favorites.noteWatched(channel, channels), WATCHED_MS);
   if (ok && player.LIGHT_BOOT) hideBootSplash(); // slow TVs: off as soon as the channel is up, not after the refresh
   if (mySeq === tuneSeq) ui.setEngineTag(ok ? player.engineInUse() : null);
   if (!ok) {
