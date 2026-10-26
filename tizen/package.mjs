@@ -153,6 +153,10 @@ console.log('\n Building .wgt...');
 // Create temp dir with package structure
 mkdirSync(TEMP, { recursive: true });
 
+// The icon's name in the package. The 2016 Smart Hub kept the old icon in its home bar through an update and a
+// reinstall (only Apps showed the new one): another file name there makes it a new icon.
+const ICON = LEGACY ? 'raflix-bar.png' : 'icon.png';
+
 // Config with 10-char package name
 const configXml = `<?xml version="1.0" encoding="UTF-8"?>
 <widget xmlns:tizen="http://tizen.org/ns/widgets"
@@ -165,7 +169,7 @@ const configXml = `<?xml version="1.0" encoding="UTF-8"?>
   <author href="http://iptvplayer">EN-IPTV Player</author>
   <content src="index.html"/>
   <feature name="http://tizen.org/feature/screen.size.all"/>
-  <icon src="icon.png"/>
+  <icon src="${ICON}"/>
   <name>RAFLIX IPTV v${APP_VERSION}</name>
   <tizen:privilege name="http://tizen.org/privilege/internet"/>
   <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
@@ -193,7 +197,7 @@ writeFileSync(htmlPath, html);
 // Copy app icon (spec-size 512x423 launcher art — not the small test icon). The 2016-2017 Smart Hub stretches it to
 // fill its ~1.83:1 bar tile (the R came out squashed): the legacy package takes a 512x280 one drawn for that tile
 // (icons/raflix-iptv-icon-legacy-512x280.svg).
-cpSync(join(TIZEN, LEGACY ? 'icon-legacy.png' : 'icon.png'), join(TEMP, 'icon.png'));
+cpSync(join(TIZEN, LEGACY ? 'icon-legacy.png' : 'icon.png'), join(TEMP, ICON));
 
 // Create unsigned ZIP via Python helper
 const ZIP_HELPER = join(TIZEN, 'ziphelper.py');
