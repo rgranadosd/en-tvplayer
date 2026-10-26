@@ -3,9 +3,17 @@
 // document, no timers — inputs in, values out. Callers in main.js,
 // ui.js and player.js own the module state and the DOM.
 
-export function filterDisplayChannels(allChannels, hiddenGroups, selectedGroup) {
+// The two lists kept on this TV (favorites.js), shown as groups before the playlist's ones.
+export const FAVORITES_GROUP = '★ Favorites';
+export const RECENT_GROUP = 'Recently watched';
+export const RECENT_MAX = 20;
+
+// lists: {favorites, recent}, channel names; the two groups above show them in their order.
+export function filterDisplayChannels(allChannels, hiddenGroups, selectedGroup, lists) {
   const hidden = hiddenGroups || [];
   const visible = (allChannels || []).filter((ch) => !hidden.includes((ch && ch.group) || 'Ungrouped'));
+  if (selectedGroup === FAVORITES_GROUP) return channelsByName(visible, lists && lists.favorites);
+  if (selectedGroup === RECENT_GROUP) return channelsByName(visible, lists && lists.recent);
   if (selectedGroup === 'all' || !selectedGroup) return visible;
   return visible.filter((ch) => ((ch && ch.group) || 'Ungrouped') === selectedGroup);
 }
@@ -45,14 +53,20 @@ export function findRequestedIndex(channels, request, hiddenGroups) {
   return exact >= 0 ? exact : list.findIndex(usable);
 }
 
-// A channel's guide ids (tvg-id) for the favorites' EPG: those of every channel with its name, since a playlist can
-// carry the same channel several times (event groups) and only some copies have a guide.
-export function guideIds(channels, name) {
-  const ids = [];
-  for (const ch of channels || []) {
-    if (ch && ch.name === name && ch.tvgId && !ids.includes(ch.tvgId)) ids.push(ch.tvgId);
+// The channels with these names, in the names' order: the first copy of each in the playlist (one can come several
+// times, in event groups); names no longer in it are skipped.
+export function channelsByName(channels, names) {
+  const out = [];
+  for (const name of names || []) {
+    const ch = (channels || []).find((c) => c && c.name === name);
+    if (ch) out.push(ch);
   }
-  return ids;
+  return out;
+}
+
+// The channel just watched first in the recent list, without its earlier place; the oldest out past RECENT_MAX.
+export function rememberRecent(names, name) {
+  return [name, ...(names || []).filter((n) => n !== name)].slice(0, RECENT_MAX);
 }
 
 // Live-segment-404 reload budget: 3 edge re-syncs per URL inside a
@@ -204,12 +218,4 @@ export function playlistsToReplace(saved, extra, alreadyAdded) {
     if (index >= 0) out.push({ index, playlist: p });
   });
   return out;
-}
-
-// Raflix's server and this TV's name, as typed in Settings: why they can't be saved, or '' when they can. Empty means
-// "the build's value".
-export function serverFieldsError(url, tv) {
-  if (url && !/^https?:\/\/[^\s/]+/.test(url)) return 'The server must start with http:// or https://';
-  if (tv && !/^[a-z0-9-]{1,30}$/.test(tv)) return 'TV name: lowercase letters, digits and dashes';
-  return '';
 }

@@ -32,7 +32,7 @@ let lastIntent = null;
 // Fast-zap sequence: overlapping tune bodies from a burst of presses share
 // one video element — only the latest press may touch the player.
 let tuneSeq = 0;
-// A channel on screen this long counts as watched (the favorites server's "recent"); zapping past it doesn't.
+// A channel on screen this long counts as watched (the "Recently watched" group); zapping past it doesn't.
 const WATCHED_MS = 10000;
 let watchedTimer = null;
 
@@ -364,10 +364,6 @@ async function init() {
   // version check. Was defined but never invoked — wire it at boot.
   scheduleUpdateCheck();
 
-  favorites.refreshFavorites().then(() => {
-    showFavoriteMarks();
-    favorites.completeGuideIds(channels);
-  });
   // Opened again while running, by an app asking for a channel (Raflix's "Directos" tab).
   window.addEventListener('appcontrol', async () => {
     const request = favorites.requestedChannel();
@@ -758,24 +754,14 @@ function openRequestedChannel(request) {
   return true;
 }
 
-// Red key: the channel joins or leaves the favorites (kept by the favorites API).
-async function toggleFavoriteFor(channel) {
+// Red key: the channel joins or leaves this TV's favorites.
+function toggleFavoriteFor(channel) {
   if (!channel) return;
-  if (!favorites.isConfigured()) {
-    ui.showTransientNotice('Favorites need the favorites server — see favorites/README.md');
-    return;
-  }
-  await favorites.refreshFavorites();
-  const on = await favorites.toggleFavorite(channel, channels);
-  if (on === null) ui.showTransientNotice('Favorites server not reachable — try again');
-  else ui.showTransientNotice((on ? '♥ Added to favorites: ' : 'Removed from favorites: ') + channel.name, 2500);
-  showFavoriteMarks();
-}
-
-// The ♥ in the channel list and the Menu's Add/Remove label follow the favorites.
-function showFavoriteMarks() {
+  const on = favorites.toggleFavorite(channel);
+  ui.showTransientNotice((on ? '♥ Added to favorites: ' : 'Removed from favorites: ') + channel.name, 2500);
+  ui.updateTvLists();
   if (ui.getSidebarMode() === 'channels') ui.renderChannelList();
-  ui.setFavoriteLabel(favorites.isFavorite(ui.getCurrentChannel()));
+  ui.setFavoriteLabel(on);
 }
 
 function showEmptyState() {
@@ -998,7 +984,12 @@ async function handleChannelSelect(channel, afterStart) {
   if (afterStart) afterStart();
   tuneInFlight = false;
   tuneSucceeded = ok === true;
-  if (ok && mySeq === tuneSeq) watchedTimer = setTimeout(() => favorites.noteWatched(channel, channels), WATCHED_MS);
+  if (ok && mySeq === tuneSeq) {
+    watchedTimer = setTimeout(() => {
+      favorites.noteWatched(channel);
+      ui.updateTvLists();
+    }, WATCHED_MS);
+  }
   if (ok && player.LIGHT_BOOT) hideBootSplash(); // slow TVs: off as soon as the channel is up, not after the refresh
   if (mySeq === tuneSeq) ui.setEngineTag(ok ? player.engineInUse() : null);
   if (!ok) {

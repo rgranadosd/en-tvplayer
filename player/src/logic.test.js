@@ -4,7 +4,6 @@ import {
   findResumeIndex,
   findIntentIndex,
   findRequestedIndex,
-  guideIds,
   segment404Decision,
   lastResortDecision,
   tokenRecoveryDecision,
@@ -281,23 +280,6 @@ describe('findRequestedIndex', () => {
     expect(findRequestedIndex(list, { name: 'ESPORT3', group: 'OTROS' }, ['OTROS'])).toBe(0);
     expect(findRequestedIndex(list, { name: 'Nope' }, [])).toBe(-1);
     expect(findRequestedIndex(list, null, [])).toBe(-1);
-  });
-});
-
-describe('guideIds', () => {
-  const list = [
-    { name: 'DAZN F1', tvgId: 'match-1' },
-    { name: 'DAZN F1', tvgId: 'es.movistar.mvf1' },
-    { name: 'DAZN F1', tvgId: 'es.movistar.mvf1' },
-    { name: 'DAZN F1', tvgId: null },
-    { name: 'Other', tvgId: 'x' },
-  ];
-  it('collects every copy of the channel, once each', () => {
-    expect(guideIds(list, 'DAZN F1')).toEqual(['match-1', 'es.movistar.mvf1']);
-  });
-  it('is empty for unknown names and missing lists', () => {
-    expect(guideIds(list, 'Nope')).toEqual([]);
-    expect(guideIds(undefined, 'DAZN F1')).toEqual([]);
   });
 });
 

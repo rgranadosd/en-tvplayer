@@ -38,8 +38,8 @@ en-tvplayer/
 │   │   ├── update.js    Update checker + opt-in ping
 │   │   ├── config.js    localStorage settings
 │   │   ├── utils.js     Shared utilities
-│   │   ├── favorites.js Favorites (Red key) via the favorites API + app-control channel requests
-│   │   ├── raflix-server.js The favorites API's address and this TV's name there (Settings > Channel Source; the build's until changed)
+│   │   ├── favorites.js This TV's favorites (Red key) and recently watched, in localStorage, shown as the first
+│   │   │                groups (logic.js FAVORITES_GROUP, RECENT_GROUP); app-control channel requests
 │   │   ├── logic.js     Pure DOM-free logic (testable, no side effects)
 │   │   └── *.test.js    Vitest suites, colocated per module (§10)
 │   ├── public/          Static assets
@@ -47,7 +47,8 @@ en-tvplayer/
 ├── tizen/               WGT build tools
 ├── scripts/             Release automation (`npm run release`)
 ├── favorites/           Favorites API (server.mjs → favorites.yml; epg.mjs: now/next from the XMLTV guide),
-│                        read by Raflix's "Directos" tab. Runs with Docker Compose from a clone of this repo on the
+│                        read by Raflix's "Directos" tab; the TV app no longer writes to it (its favorites and
+│                        recently watched stay on each TV). Runs with Docker Compose from a clone of this repo on the
 │                        always-on machine: `git pull && docker compose up -d --force-recreate` there; `.env`
 │                        (EPG_URL) and `data/` stay out of git
 ├── proxy/               Desktop testing relay (CORS + Origin/Referer/UA fix)
@@ -115,7 +116,7 @@ en-tvplayer/
 | Enter | Select channel |
 | Back | Close menu |
 | Volume ↑/↓ | Adjust volume |
-| Red | Add/remove favorite (playing channel, or the focused one in the list) — needs `favorites/` running |
+| Red | Add/remove favorite (playing channel, or the focused one in the list), kept on this TV |
 | → › Add to Favorites | The same from the Menu, for remotes without color keys |
 
 Opened by another app with Tizen app-control data `channel` (+ `group`), the app downloads the playlist first

@@ -4,8 +4,6 @@ import { login as xtreamLogin } from './xtream.js';
 import { setConsented } from './update.js';
 import * as player from './player.js';
 import * as ui from './ui.js';
-import { renderServerCard, saveServerFields, SERVER_INPUTS } from './raflix-server.js';
-import { refreshFavorites } from './favorites.js';
 
 let container = null;
 let onPlaylistFetched = null;
@@ -260,8 +258,6 @@ export function selectFocused() {
       moveSettingsFocus('pl-edit-pass');
     } else if (el.id === 'pl-edit-pass') {
       moveSettingsFocus('pl-edit-name');
-    } else if (SERVER_INPUTS.includes(el.id)) {
-      if (saveServerFields()) refreshFavorites();
     } else {
       el.focus();
     }
@@ -562,7 +558,6 @@ function buildFocusOrder() {
       const addBtn = document.getElementById('pl-add-btn');
       if (addBtn) focusOrder.push(addBtn);
       focusOrder.push(document.getElementById('settings-fetch-btn'));
-      SERVER_INPUTS.forEach((id) => focusOrder.push(document.getElementById(id)));
     }
   } else if (activeSection === 'playback') {
     focusOrder.push(document.getElementById('toggle-autoq'));
@@ -631,7 +626,6 @@ function render() {
 
   if (activeSection === 'source') {
     mainHtml += renderSourceCard(s, lastFetched);
-    if (!addMode && !editMode) mainHtml += renderServerCard();
   } else if (activeSection === 'playback') {
     mainHtml += renderPlaybackCard();
   } else {

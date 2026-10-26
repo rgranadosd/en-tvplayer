@@ -26,13 +26,6 @@ function getExtraPlaylists(building) {
   return list;
 }
 
-// The favorites API (favorites/server.mjs) for this build, from player/favorites.local.json (not in git):
-// {"url": "http://192.168.1.200:5002"}. Without the file, the Red key has no favorites to keep.
-function getFavoritesUrl() {
-  const file = path.resolve(__dirname, 'favorites.local.json');
-  return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf-8')).url || '' : '';
-}
-
 // Diagnostic beacon address (src/diag.js) from player/diag.local.json (not in git): {"url": "http://<mac>:8099/log"}.
 // Without the file, nothing is sent and the HTML hook isn't added.
 function getDiagUrl() {
@@ -116,8 +109,6 @@ export default defineConfig(({ command, mode }) => {
     define: {
       __APP_VERSION__: JSON.stringify(getAppVersion()),
       __EXTRA_PLAYLISTS__: JSON.stringify(getExtraPlaylists(command === 'build')),
-      __FAVORITES_URL__: JSON.stringify(getFavoritesUrl()),
-      __RAFLIX_TV__: JSON.stringify(process.env.RAFLIX_TV || ''),
       __DIAG_URL__: JSON.stringify(getDiagUrl()),
     },
     root: '.',

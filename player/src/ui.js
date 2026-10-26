@@ -1,7 +1,7 @@
 import { escapeHtml } from './utils.js';
 import { getHiddenGroups } from './config.js';
-import { filterDisplayChannels, slowHintFor, attemptSuffix } from './logic.js';
-import { isFavorite } from './favorites.js';
+import { filterDisplayChannels, slowHintFor, attemptSuffix, FAVORITES_GROUP, RECENT_GROUP } from './logic.js';
+import { isFavorite, favoriteNames, recentNames } from './favorites.js';
 
 let channels = [];
 let currentIndex = -1;
@@ -114,7 +114,22 @@ export function extractGroups(channelList) {
       count: groupMap[name].length,
       channels: groupMap[name],
     }));
-  groups = [{ name: 'All Channels', count: visible.length, channels: visible }, ...realGroups];
+  // This TV's favorites and recent channels first, when they have any.
+  const own = [FAVORITES_GROUP, RECENT_GROUP]
+    .map((name) => ({ name, channels: filterDisplayChannels(channelList, hidden, name, tvLists()) }))
+    .filter((g) => g.channels.length)
+    .map((g) => ({ ...g, count: g.channels.length }));
+  groups = [{ name: 'All Channels', count: visible.length, channels: visible }, ...own, ...realGroups];
+}
+
+function tvLists() {
+  return { favorites: favoriteNames(), recent: recentNames() };
+}
+
+// The favorites or the recent channels changed: their groups follow (the group list, if it's on screen).
+export function updateTvLists() {
+  extractGroups(channels);
+  if (sidebarMode === 'groups') renderGroupList();
 }
 
 export function getSidebarMode() {
@@ -432,12 +447,7 @@ export function renderChannelList() {
   const container = document.getElementById('channel-list');
   if (!container) return;
 
-  let displayChannels;
-  if (selectedGroup === 'all' || !selectedGroup) {
-    displayChannels = channels;
-  } else {
-    displayChannels = channels.filter((ch) => (ch.group || 'Ungrouped') === selectedGroup);
-  }
+  const displayChannels = getDisplayChannels();
 
   const total = displayChannels.length;
   if (total > VIRTUAL_SIZE) {
@@ -585,7 +595,7 @@ export function selectFocused() {
 }
 
 export function getDisplayChannels() {
-  return filterDisplayChannels(channels, getHiddenGroups(), selectedGroup);
+  return filterDisplayChannels(channels, getHiddenGroups(), selectedGroup, tvLists());
 }
 
 export function jumpToNumber(num, skipFullscreen) {

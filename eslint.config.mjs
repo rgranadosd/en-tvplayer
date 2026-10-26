@@ -13,8 +13,6 @@ export default [
         ...globals.browser,
         __APP_VERSION__: 'readonly',
         __EXTRA_PLAYLISTS__: 'readonly',
-        __FAVORITES_URL__: 'readonly',
-        __RAFLIX_TV__: 'readonly',
         __DIAG_URL__: 'readonly',
         __DIAG_URL__: 'readonly',
       },
