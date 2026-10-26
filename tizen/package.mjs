@@ -23,7 +23,9 @@ const APP_VERSION = playerPkg.version;
 const commitHash = execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trim();
 const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
 const versionType = branch === 'main' ? 'stable' : 'beta';
-const WGT_NAME = `EN-IPTV_Player_v${APP_VERSION}${LEGACY ? '_tizen24' : ''}_${commitHash}.wgt`;
+// The TV the build is for (RAFLIX_TV, player/playlists.local.json: its own IPTV service user), in the name.
+const TV_NAME = process.env.RAFLIX_TV ? `_${process.env.RAFLIX_TV}` : '';
+const WGT_NAME = `EN-IPTV_Player_v${APP_VERSION}${LEGACY ? '_tizen24' : ''}${TV_NAME}_${commitHash}.wgt`;
 const OUTPUT_DIR = join(ROOT, versionType);
 if (!existsSync(OUTPUT_DIR)) mkdirSync(OUTPUT_DIR, { recursive: true });
 

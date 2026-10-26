@@ -7,11 +7,23 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Extra playlists for this build, from player/playlists.local.json (not in git: their URLs can carry logins):
-// [{"name": "…", "url": "…"}]. Without the file, none.
-function getExtraPlaylists() {
+// Extra playlists for this build, from player/playlists.local.json (not in git: their URLs carry logins). Either one
+// list for every TV, [{"name": "…", "url": "…"}], or one per TV, each with its own IPTV service user:
+// {"tvs": {"comedor": [...], "dormitorio": [...]}}, picked with RAFLIX_TV=<name>. A build (not tests or dev) stops
+// rather than ship another TV's login or an unfilled one. Without the file, none.
+function getExtraPlaylists(building) {
   const file = path.resolve(__dirname, 'playlists.local.json');
-  return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf-8')) : [];
+  if (!fs.existsSync(file)) return [];
+  const data = JSON.parse(fs.readFileSync(file, 'utf-8'));
+  if (Array.isArray(data)) return data;
+  const tvs = Object.keys(data.tvs || {});
+  const list = (data.tvs || {})[process.env.RAFLIX_TV];
+  if (!building) return list || [];
+  if (!list) throw new Error('playlists.local.json has a list per TV: build with RAFLIX_TV=' + tvs.join('|'));
+  if (list.some((p) => /[<>]/.test(p.url || ''))) {
+    throw new Error('playlists.local.json: fill in the ' + process.env.RAFLIX_TV + " TV's login");
+  }
+  return list;
 }
 
 // The favorites API (favorites/server.mjs) for this build, from player/favorites.local.json (not in git):
@@ -96,14 +108,14 @@ async function writeLegacyStylesheet(outDir, plugins) {
 // Shaka (player-legacy.js), ES5 with polyfills (fetch, Promise…), static CSS with -webkit- prefixes, in dist-legacy/.
 const LEGACY_BROWSERS = ['safari >= 7', 'chrome >= 30'];
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   const isLegacy = mode === 'legacy';
   const outDir = isLegacy ? 'dist-legacy' : 'dist';
   const legacyCss = [staticCssVars({ '--tv-scale': '1.35' }), autoprefixer({ overrideBrowserslist: LEGACY_BROWSERS })];
   return {
     define: {
       __APP_VERSION__: JSON.stringify(getAppVersion()),
-      __EXTRA_PLAYLISTS__: JSON.stringify(getExtraPlaylists()),
+      __EXTRA_PLAYLISTS__: JSON.stringify(getExtraPlaylists(command === 'build')),
       __FAVORITES_URL__: JSON.stringify(getFavoritesUrl()),
       __DIAG_URL__: JSON.stringify(getDiagUrl()),
     },

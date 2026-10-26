@@ -68,6 +68,11 @@ en-tvplayer/
   turns CSS custom properties into their `:root` values (`--tv-scale` fixed at 1.35, its floor) and adds `-webkit-`
   prefixes; package paths are relative. Checked by `npm run check:tizen24` (ES5 syntax, no Shaka, no `var(--`,
   compat.js polyfills, load order). DOM methods polyfills can't add go in `public/compat.js`, guarded.
+- **One IPTV service user per TV**: `player/playlists.local.json` (not in git) holds `{"tvs": {"comedor": [...],
+  "dormitorio": [...]}}`, each TV's playlist with its own login; build with `RAFLIX_TV=<name>` (e.g.
+  `RAFLIX_TV=comedor npm run build:legacy && RAFLIX_TV=comedor TIZEN_CERT_PROFILE=FreeMyTV npm run tizen:legacy`). The
+  build stops without it, with an unknown TV or an unfilled `<…>`; the package name carries the TV. On the TV, a
+  build-time playlist under the same name swaps its URL in place (`playlistsToReplace`), so a TV keeps one "Raflix".
 - Keep both working: the same `player.js`/`player-legacy.js` exports, and no `KeyboardEvent.key`-only handling (2016
   has keyCode only: `SAMSUNG_KEY_CODES` in remote.js). `tizen/install.py` picks the package by the TV's Tizen version.
 - The legacy package must survive a JavaScript failure: its stylesheet is a linked `styles.css` (Vite would inline it

@@ -21,6 +21,7 @@ import {
   stallPatienceExceeded,
   playlistsToAdd,
   bufferStalled,
+  playlistsToReplace,
 } from './logic.js';
 
 const CHANNELS = [
@@ -311,5 +312,23 @@ describe('bufferStalled', () => {
 
   it('waits while the buffer still moved recently', () => {
     expect(bufferStalled(10000, 17999, 8000)).toBe(false);
+  });
+});
+
+describe('playlistsToReplace', () => {
+  const old = { name: 'Raflix', url: 'http://srv/playlist?usr=papa' };
+  const tdt = { name: 'TDT', url: 'https://tdt/tv.m3u8' };
+  const fresh = { name: 'Raflix', url: 'http://srv/playlist?usr=tv-comedor' };
+
+  it("swaps a build-time playlist's URL when a new build brings another under its name", () => {
+    expect(playlistsToReplace([tdt, old], [fresh], [old.url])).toEqual([{ index: 1, playlist: fresh }]);
+  });
+
+  it('leaves a same-name playlist the user added by hand', () => {
+    expect(playlistsToReplace([tdt, old], [fresh], [])).toEqual([]);
+  });
+
+  it('does nothing when the URL is already the same', () => {
+    expect(playlistsToReplace([tdt, fresh], [fresh], [fresh.url])).toEqual([]);
   });
 });

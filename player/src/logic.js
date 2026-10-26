@@ -191,3 +191,17 @@ export function playlistsToAdd(saved, extra, alreadyAdded) {
 export function bufferStalled(progressAt, now, stallMs) {
   return progressAt > 0 && now - progressAt >= stallMs;
 }
+
+// Build-time playlists that replace a saved one: same name, a different URL, and the saved one came from an earlier
+// build (its URL is in alreadyAdded) — a TV moving to its own login keeps one "Raflix", not two. A same-name playlist
+// the user added by hand is left alone. [{index, playlist}]
+export function playlistsToReplace(saved, extra, alreadyAdded) {
+  const added = alreadyAdded || [];
+  const out = [];
+  (extra || []).forEach((p) => {
+    if (!p || !p.url) return;
+    const index = (saved || []).findIndex((s) => s && s.name === p.name && s.url !== p.url && added.includes(s.url));
+    if (index >= 0) out.push({ index, playlist: p });
+  });
+  return out;
+}

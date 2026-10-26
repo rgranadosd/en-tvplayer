@@ -1,4 +1,4 @@
-import { playlistsToAdd } from './logic.js';
+import { playlistsToAdd, playlistsToReplace } from './logic.js';
 
 const SETTINGS_KEY = 'en_settings';
 const DEFAULT_PLAYLIST = {
@@ -65,6 +65,15 @@ export function getSettings() {
           localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
         } catch {}
       }
+    }
+    // A new build's login for a playlist an earlier build added (the TV's own service user): swapped in place.
+    const swaps = playlistsToReplace(s.playlists, __EXTRA_PLAYLISTS__, s.extraPlaylistsAdded);
+    if (swaps.length) {
+      for (const { index, playlist } of swaps) s.playlists[index] = { ...s.playlists[index], ...playlist };
+      s.extraPlaylistsAdded = [...(s.extraPlaylistsAdded || []), ...swaps.map((w) => w.playlist.url)];
+      try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+      } catch {}
     }
     // Playlists from player/playlists.local.json (kept out of git: their URLs can carry logins), added once each.
     const extra = playlistsToAdd(s.playlists, __EXTRA_PLAYLISTS__, s.extraPlaylistsAdded);
