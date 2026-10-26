@@ -190,8 +190,10 @@ let html = readFileSync(htmlPath, 'utf-8');
 html = html.replace(/\/enplayer\//g, LEGACY ? './' : '/');
 writeFileSync(htmlPath, html);
 
-// Copy app icon (spec-size 512x423 launcher art — not the small test icon)
-cpSync(join(TIZEN, 'icon.png'), join(TEMP, 'icon.png'));
+// Copy app icon (spec-size 512x423 launcher art — not the small test icon). The 2016-2017 Smart Hub stretches it to
+// fill its ~1.83:1 bar tile (the R came out squashed): the legacy package takes a 512x280 one drawn for that tile
+// (icons/raflix-iptv-icon-legacy-512x280.svg).
+cpSync(join(TIZEN, LEGACY ? 'icon-legacy.png' : 'icon.png'), join(TEMP, 'icon.png'));
 
 // Create unsigned ZIP via Python helper
 const ZIP_HELPER = join(TIZEN, 'ziphelper.py');
