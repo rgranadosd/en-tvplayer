@@ -316,7 +316,7 @@ describe('bufferStalled', () => {
 });
 
 describe('playlistsToReplace', () => {
-  const old = { name: 'Raflix', url: 'http://srv/playlist?usr=papa' };
+  const old = { name: 'Raflix', url: 'http://srv/playlist?usr=shared' };
   const tdt = { name: 'TDT', url: 'https://tdt/tv.m3u8' };
   const fresh = { name: 'Raflix', url: 'http://srv/playlist?usr=tv-comedor' };
 
