@@ -63,9 +63,9 @@ const BOOT_MIN_MS = 1500; // logo stays at least this long on every launch
 const BOOT_ZOOM_MS = 700; // fly-into-the-logo exit
 const BOOT_IDLE_HOLD_MS = 1500; // extra hold after tagline when no playlist fetch runs
 const BOOT_READ_MS = 1800; // linger once all text is up so it can be read
-// Opened by Raflix on a channel: no splash and no What's New (shown on the next normal launch), straight to the
-// channel, so the two apps feel like one.
-const quietBoot = !!favorites.requestedChannel();
+// Opened by Raflix (on a channel, or from its shelf or "Play at start"): no splash and no What's New (shown on the next
+// normal launch), straight to the channel (the requested one, or the last one watched), so the two apps feel like one.
+const quietBoot = favorites.openedByRaflix();
 
 // `always`: also when quietBoot (no channels cached yet: nothing else to show while the playlist downloads).
 function hideLaunchSpinner() {
@@ -396,7 +396,7 @@ async function init() {
   const autoRefresh = s.autoRefreshPlaylist !== false;
 
   if (quietBoot && s.channels && s.channels.length > 0) {
-    // Opened by Raflix on a channel: the fresh list first (stream URLs rotate, event groups change), then the
+    // Opened by Raflix: the fresh list first (stream URLs rotate, event groups change), then the
     // tune; the cache only if the download fails. The start-up spinner covers the wait.
     channels = (await freshChannels()) || s.channels;
     startPlayer();

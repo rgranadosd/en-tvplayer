@@ -52,18 +52,25 @@ export function noteWatched(channel) {
   write(RECENT_KEY, recent);
 }
 
-// The channel another app asked for when it opened this one (Raflix: Tizen app control data "channel" and "group").
-export function requestedChannel() {
+// A value of the Tizen app control this app was opened with ('' when none, or not a Tizen TV).
+function requested(key) {
   try {
     const req = window.tizen.application.getCurrentApplication().getRequestedAppControl();
     const data = (req && req.appControl && req.appControl.data) || [];
-    const get = (key) => {
-      const d = data.find((x) => x.key === key);
-      return d && d.value && d.value[0] ? String(d.value[0]) : '';
-    };
-    const name = get('channel');
-    return name ? { name, group: get('group') } : null;
+    const d = data.find((x) => x.key === key);
+    return d && d.value && d.value[0] ? String(d.value[0]) : '';
   } catch {
-    return null;
+    return '';
   }
+}
+
+// The channel another app asked for when it opened this one (Raflix: app control data "channel" and "group").
+export function requestedChannel() {
+  const name = requested('channel');
+  return name ? { name, group: requested('group') } : null;
+}
+
+// Opened by Raflix (its Directos tab, its shelf or its "Play at start"): app control data "from" = "raflix".
+export function openedByRaflix() {
+  return requested('from') === 'raflix' || !!requestedChannel();
 }
