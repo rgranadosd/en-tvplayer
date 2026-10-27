@@ -13,6 +13,7 @@ import {
   tuneSuperseded,
 } from './logic.js';
 import * as favorites from './favorites.js';
+import { shareLists } from './raflix-share.js';
 import { diag, diagEnabled } from './diag.js';
 
 let currentIndex = 0;
@@ -700,6 +701,7 @@ function startPlayer() {
   }
   diag('start: ready to resume ' + (Date.now() - tStart) + 'ms after settings');
   restoreLastSession();
+  setTimeout(shareTvLists, 5000); // after the first channel is up: slow TVs tune first
 }
 
 // Boot resume: replay the last channel + group view instead of channel 0.
@@ -754,12 +756,18 @@ function openRequestedChannel(request) {
   return true;
 }
 
+// The favorites and recent channels, for Raflix (only where it's installed).
+function shareTvLists() {
+  shareLists(favorites.favoriteNames(), favorites.recentNames(), channels);
+}
+
 // Red key: the channel joins or leaves this TV's favorites.
 function toggleFavoriteFor(channel) {
   if (!channel) return;
   const on = favorites.toggleFavorite(channel);
   ui.showTransientNotice((on ? '♥ Added to favorites: ' : 'Removed from favorites: ') + channel.name, 2500);
   ui.updateTvLists();
+  shareTvLists();
   if (ui.getSidebarMode() === 'channels') ui.renderChannelList();
   ui.setFavoriteLabel(on);
 }
@@ -988,6 +996,7 @@ async function handleChannelSelect(channel, afterStart) {
     watchedTimer = setTimeout(() => {
       favorites.noteWatched(channel);
       ui.updateTvLists();
+      shareTvLists();
     }, WATCHED_MS);
   }
   if (ok && player.LIGHT_BOOT) hideBootSplash(); // slow TVs: off as soon as the channel is up, not after the refresh

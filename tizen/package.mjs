@@ -175,6 +175,10 @@ const configXml = `<?xml version="1.0" encoding="UTF-8"?>
   <name>RAFLIX IPTV v${APP_VERSION}</name>
   <tizen:privilege name="http://tizen.org/privilege/internet"/>
   <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
+  <tizen:privilege name="http://tizen.org/privilege/application.info"/>
+  <tizen:privilege name="http://tizen.org/privilege/filesystem.read"/>
+  <tizen:privilege name="http://tizen.org/privilege/filesystem.write"/>
+  <tizen:privilege name="http://tizen.org/privilege/mediastorage"/>
   <tizen:profile name="tv-samsung"/>
   <tizen:setting screen-orientation="landscape"
                  context-menu="enable"

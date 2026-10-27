@@ -219,3 +219,13 @@ export function playlistsToReplace(saved, extra, alreadyAdded) {
   });
   return out;
 }
+
+// What this TV shares with Raflix's "Directos" tab: the recent channels and the favorites, with the group and logo of
+// their first copy in the playlist (just the name when it's no longer there).
+export function shareContent(favorites, recent, channels, now) {
+  const card = (name) => {
+    const ch = channelsByName(channels, [name])[0];
+    return ch ? { name, group: ch.group || '', logo: ch.logo || '' } : { name };
+  };
+  return { updated: now, recent: (recent || []).map(card), favorites: (favorites || []).map(card) };
+}

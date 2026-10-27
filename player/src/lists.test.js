@@ -3,6 +3,7 @@ import {
   filterDisplayChannels,
   channelsByName,
   rememberRecent,
+  shareContent,
   FAVORITES_GROUP,
   RECENT_GROUP,
   RECENT_MAX,
@@ -56,5 +57,22 @@ describe('rememberRecent', () => {
     expect(out).toHaveLength(RECENT_MAX);
     expect(out[0]).toBe('New');
     expect(out).not.toContain('C' + (RECENT_MAX - 1));
+  });
+});
+
+describe('shareContent', () => {
+  it('lists the recent channels and the favorites with their group and logo', () => {
+    const list = [
+      { name: 'La 1', group: 'TDT', logo: 'l1.png' },
+      { name: 'DAZN F1', group: 'Events' },
+    ];
+    expect(shareContent(['La 1'], ['DAZN F1', 'Gone'], list, 5)).toEqual({
+      updated: 5,
+      recent: [{ name: 'DAZN F1', group: 'Events', logo: '' }, { name: 'Gone' }],
+      favorites: [{ name: 'La 1', group: 'TDT', logo: 'l1.png' }],
+    });
+  });
+  it('is null-safe', () => {
+    expect(shareContent(null, null, null, 0)).toEqual({ updated: 0, recent: [], favorites: [] });
   });
 });
