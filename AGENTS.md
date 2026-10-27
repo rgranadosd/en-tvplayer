@@ -40,6 +40,9 @@ en-tvplayer/
 │   │   ├── utils.js     Shared utilities
 │   │   ├── favorites.js This TV's favorites (Red key) and recently watched, in localStorage, shown as the first
 │   │   │                groups (logic.js FAVORITES_GROUP, RECENT_GROUP); app-control channel requests
+│   │   ├── raflix-share.js Where Raflix is installed: favorites, recent and their next 12 h of guide to
+│   │   │                Documents/raflix-iptv.json, for its Directos tab (nothing at all without Raflix)
+│   │   ├── guide.js     Pure XMLTV helpers: the playlist's url-tvg, programmes in a time window, by channel
 │   │   ├── logic.js     Pure DOM-free logic (testable, no side effects)
 │   │   └── *.test.js    Vitest suites, colocated per module (§10)
 │   ├── public/          Static assets

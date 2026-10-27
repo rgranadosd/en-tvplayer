@@ -13,7 +13,7 @@ import {
   tuneSuperseded,
 } from './logic.js';
 import * as favorites from './favorites.js';
-import { shareLists } from './raflix-share.js';
+import { shareLists, refreshGuide } from './raflix-share.js';
 import { diag, diagEnabled } from './diag.js';
 
 let currentIndex = 0;
@@ -761,6 +761,21 @@ function shareTvLists() {
   shareLists(favorites.favoriteNames(), favorites.recentNames(), channels);
 }
 
+// Their guide too: first 10 s after a channel is up (never slowing it), then every 30 minutes.
+const GUIDE_AFTER_MS = 10000;
+const GUIDE_EVERY_MS = 30 * 60000;
+let guideStarted = false;
+
+function startGuide() {
+  if (guideStarted) return;
+  guideStarted = true;
+  const update = () => refreshGuide(favorites.favoriteNames(), favorites.recentNames(), channels);
+  setTimeout(() => {
+    update();
+    setInterval(update, GUIDE_EVERY_MS);
+  }, GUIDE_AFTER_MS);
+}
+
 // Red key: the channel joins or leaves this TV's favorites.
 function toggleFavoriteFor(channel) {
   if (!channel) return;
@@ -993,6 +1008,7 @@ async function handleChannelSelect(channel, afterStart) {
   tuneInFlight = false;
   tuneSucceeded = ok === true;
   if (ok && mySeq === tuneSeq) {
+    startGuide();
     watchedTimer = setTimeout(() => {
       favorites.noteWatched(channel);
       ui.updateTvLists();

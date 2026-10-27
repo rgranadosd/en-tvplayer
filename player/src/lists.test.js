@@ -70,9 +70,10 @@ describe('shareContent', () => {
       updated: 5,
       recent: [{ name: 'DAZN F1', group: 'Events', logo: '' }, { name: 'Gone' }],
       favorites: [{ name: 'La 1', group: 'TDT', logo: 'l1.png' }],
+      guide: {},
     });
   });
   it('is null-safe', () => {
-    expect(shareContent(null, null, null, 0)).toEqual({ updated: 0, recent: [], favorites: [] });
+    expect(shareContent(null, null, null, 0)).toEqual({ updated: 0, recent: [], favorites: [], guide: {} });
   });
 });

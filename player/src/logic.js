@@ -1,4 +1,6 @@
 // Pure, DOM-free logic for unit testing (Vitest, node env).
+import { guideFor } from './guide.js';
+
 // Everything here must stay side-effect free: no localStorage, no
 // document, no timers — inputs in, values out. Callers in main.js,
 // ui.js and player.js own the module state and the DOM.
@@ -221,11 +223,18 @@ export function playlistsToReplace(saved, extra, alreadyAdded) {
 }
 
 // What this TV shares with Raflix's "Directos" tab: the recent channels and the favorites, with the group and logo of
-// their first copy in the playlist (just the name when it's no longer there).
-export function shareContent(favorites, recent, channels, now) {
+// their first copy in the playlist (just the name when it's no longer there), and their guide from `window`
+// (guideWindow): {name: [{s, e, t}]}.
+export function shareContent(favorites, recent, channels, now, window) {
   const card = (name) => {
     const ch = channelsByName(channels, [name])[0];
     return ch ? { name, group: ch.group || '', logo: ch.logo || '' } : { name };
   };
-  return { updated: now, recent: (recent || []).map(card), favorites: (favorites || []).map(card) };
+  const names = [...(recent || []), ...(favorites || [])];
+  return {
+    updated: now,
+    recent: (recent || []).map(card),
+    favorites: (favorites || []).map(card),
+    guide: guideFor(names, channels, window || {}),
+  };
 }
