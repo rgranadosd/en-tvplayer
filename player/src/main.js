@@ -1120,6 +1120,7 @@ async function refreshChannelsInBackground() {
   try {
     const newChannels = await fetchPlaylistWithRetry(active);
     applyFreshChannels(newChannels);
+    diag('playlist refreshed: ' + newChannels.length + ' channels');
     // The boot tune ran on pre-refresh (possibly stale-token) URLs. If it
     // never got anywhere, re-tune the same channel with its fresh URL
     // instead of stranding the user on the brand screen. Working playback
@@ -1131,6 +1132,7 @@ async function refreshChannelsInBackground() {
     return true;
   } catch (e) {
     console.warn('Background playlist refresh failed:', e.message);
+    diag('playlist refresh failed: ' + e.message);
     return false;
   }
 }
