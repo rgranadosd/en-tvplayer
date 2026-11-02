@@ -156,6 +156,15 @@ export function play(url, { userAgent, referer, timeoutMs = 15000 } = {}) {
       avplay.open(url);
       active = true;
       avplay.setDisplayRect(0, 0, 1920, 1080);
+      // Each channel keeps its own shape: by default AVPlay stretches every picture to the full rect, so 4:3 channels
+      // came out squashed. AUTO_ASPECT_RATIO also follows anamorphic SD; TVs without it get LETTER_BOX.
+      try {
+        avplay.setDisplayMethod('PLAYER_DISPLAY_MODE_AUTO_ASPECT_RATIO');
+      } catch {
+        try {
+          avplay.setDisplayMethod('PLAYER_DISPLAY_MODE_LETTER_BOX');
+        } catch {}
+      }
       // Start once 3 s are buffered (the default waits for far more on older TVs): faster zapping on live TS.
       try {
         avplay.setBufferingParam('PLAYER_BUFFER_FOR_PLAY', 'PLAYER_BUFFER_SIZE_IN_SECOND', 3);
