@@ -53,6 +53,13 @@ function diagHtmlHook(url) {
       );
 }
 
+// Groups this build adds, from player/groups.local.json (not in git): [{"group": "17 - …", "names": "^…"}], each
+// channel whose name matches the pattern moves to that group (regroupChannels). Without the file, none.
+function getExtraGroups() {
+  const file = path.resolve(__dirname, 'groups.local.json');
+  return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf-8')) : [];
+}
+
 function getAppVersion() {
   const rootPkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'package.json'), 'utf-8'));
   return rootPkg.version || '0.0.0';
@@ -110,6 +117,7 @@ export default defineConfig(({ command, mode }) => {
       __APP_VERSION__: JSON.stringify(getAppVersion()),
       __EXTRA_PLAYLISTS__: JSON.stringify(getExtraPlaylists(command === 'build')),
       __DIAG_URL__: JSON.stringify(getDiagUrl()),
+      __EXTRA_GROUPS__: JSON.stringify(getExtraGroups()),
     },
     root: '.',
     base: '/enplayer/',

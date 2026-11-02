@@ -247,3 +247,14 @@ export function nearestScrollTop(scrollTop, viewHeight, top, height) {
   if (top + height > scrollTop + viewHeight) return top + height - viewHeight;
   return scrollTop;
 }
+
+// Groups this build adds (player/groups.local.json): [{group, names}], names a pattern matched against the channel
+// name, case ignored. A matching channel moves to that group; the first rule that matches wins.
+export function regroupChannels(channels, rules) {
+  const compiled = (rules || []).map((r) => ({ group: r.group, re: new RegExp(r.names, 'i') }));
+  for (const ch of channels || []) {
+    const rule = ch && compiled.find((r) => r.re.test(ch.name || ''));
+    if (rule) ch.group = rule.group;
+  }
+  return channels;
+}
