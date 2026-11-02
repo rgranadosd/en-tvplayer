@@ -191,6 +191,20 @@ const LAST_SEEN_KEY = 'en_last_seen_version';
 // RAFLIX IPTV's own history; EN IPTV's (what it was forked from) is in CHANGELOG.md.
 const CHANGELOG = [
   {
+    version: '1.0.1',
+    sections: [
+      {
+        type: 'fixed',
+        items: [
+          'Channel list: no more blank rows while scrolling',
+          '4:3 channels keep their shape instead of being stretched',
+          'Slow channels get 30 s to start, not 15',
+          'The playlist also refreshes when you come back to the app',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.0.0',
     sections: [
       {
