@@ -79,8 +79,9 @@ export function onError(callback) {
 }
 
 // Opens url natively. Resolves true once the first frame plays, false on
-// error/timeout. Rejects never — always resolves.
-export function play(url, { userAgent, referer, timeoutMs = 15000 } = {}) {
+// error/timeout. Rejects never — always resolves. 30 s: the channel server takes up to ~13 s to start some channels
+// on a slow day, and 15 s gave up on them right at the edge.
+export function play(url, { userAgent, referer, timeoutMs = 30000 } = {}) {
   return new Promise((resolve) => {
     if (!isAvailable()) {
       resolve(false);
