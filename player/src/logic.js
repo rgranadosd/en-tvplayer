@@ -238,3 +238,12 @@ export function shareContent(favorites, recent, channels, now, window) {
     guide: guideFor(names, channels, window || {}),
   };
 }
+
+// The scrollTop that brings a row (top, height) into a viewport (scrollTop, viewHeight) with the least movement:
+// scrollIntoView's {block: 'nearest'}, which Chromium 56 (Tizen 4) lacks — it reads the object as `true` and pins the
+// row to the top.
+export function nearestScrollTop(scrollTop, viewHeight, top, height) {
+  if (top < scrollTop) return top;
+  if (top + height > scrollTop + viewHeight) return top + height - viewHeight;
+  return scrollTop;
+}

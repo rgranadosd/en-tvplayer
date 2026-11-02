@@ -1,6 +1,13 @@
 import { escapeHtml } from './utils.js';
 import { getHiddenGroups } from './config.js';
-import { filterDisplayChannels, slowHintFor, attemptSuffix, FAVORITES_GROUP, RECENT_GROUP } from './logic.js';
+import {
+  filterDisplayChannels,
+  slowHintFor,
+  attemptSuffix,
+  nearestScrollTop,
+  FAVORITES_GROUP,
+  RECENT_GROUP,
+} from './logic.js';
 import { isFavorite, favoriteNames, recentNames } from './favorites.js';
 
 let channels = [];
@@ -205,8 +212,16 @@ export function updateGroupFocus() {
     // and the focus runs ahead of the visible scroll position; re-centering
     // on every step makes the list jump so the eye can't track focus.
     // Nearest keeps the focused row steadily in view, one step at a time.
-    items[groupFocusedIndex].scrollIntoView({ block: 'nearest', behavior: 'auto' });
+    scrollNearest(document.getElementById('group-list'), items[groupFocusedIndex]);
   }
+}
+
+// scrollIntoView({block: 'nearest'}) pins the row to the top on the TVs (see nearestScrollTop), which ran the windowed
+// channel list past its last rendered row: blank rows until the window moved.
+function scrollNearest(container, el) {
+  if (!container || !el) return;
+  const top = el.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
+  container.scrollTop = nearestScrollTop(container.scrollTop, container.clientHeight, top, el.offsetHeight);
 }
 
 export function navigateGroupUp() {
@@ -357,7 +372,7 @@ function updateSearchFocus() {
   items.forEach((item, i) => item.classList.toggle('focused', i === searchFocus));
   if (items[searchFocus]) {
     // Instant + minimal scroll: see updateGroupFocus.
-    items[searchFocus].scrollIntoView({ block: 'nearest', behavior: 'auto' });
+    scrollNearest(document.getElementById('group-list'), items[searchFocus]);
   }
 }
 
@@ -443,9 +458,11 @@ export function refreshGroupVisibility() {
   }
 }
 
-export function renderChannelList() {
+// keepScroll: up/down moved the window; keep the list where it was instead of centering the focused row.
+export function renderChannelList(keepScroll) {
   const container = document.getElementById('channel-list');
   if (!container) return;
+  const prevScrollTop = container.scrollTop;
 
   const displayChannels = getDisplayChannels();
 
@@ -497,20 +514,19 @@ export function renderChannelList() {
     container.appendChild(bottom);
     const target =
       virtualStart * stride + (focusedIndex - virtualStart) * stride - (container.clientHeight - stride) / 2;
-    container.scrollTop = Math.max(0, target);
+    container.scrollTop = keepScroll ? prevScrollTop : Math.max(0, target);
   }
   container.dataset.virtualStart = virtualStart;
   container.dataset.virtualEnd = virtualEnd;
   updateActiveChannel();
 }
 
-// Uniform row pitch (row + its vertical margins), measured live so scaling
-// and fonts can't drift the virtual scroll math.
+// Uniform row pitch, measured live between two rows so scaling, fonts and
+// collapsing margins (one gap between rows, not top + bottom) can't drift the virtual scroll math.
 function channelRowStride(container) {
-  const row = container ? container.querySelector('.channel-item') : null;
-  if (!row || !row.offsetHeight) return 0;
-  const cs = getComputedStyle(row);
-  return row.offsetHeight + parseFloat(cs.marginTop) + parseFloat(cs.marginBottom);
+  const rows = container ? container.querySelectorAll('.channel-item') : [];
+  if (rows.length < 2) return 0;
+  return rows[1].getBoundingClientRect().top - rows[0].getBoundingClientRect().top;
 }
 
 // silent: mark the channel in the list without tuning it (the caller already did).
@@ -569,7 +585,7 @@ export function navigateUp() {
   if (displayChannels.length === 0) return;
   focusedIndex = (focusedIndex - 1 + displayChannels.length) % displayChannels.length;
   if (focusedIndex < virtualStart || focusedIndex >= virtualEnd) {
-    renderChannelList();
+    renderChannelList(true);
   }
   updateFocus();
   scrollToFocused();
@@ -580,7 +596,7 @@ export function navigateDown() {
   if (displayChannels.length === 0) return;
   focusedIndex = (focusedIndex + 1) % displayChannels.length;
   if (focusedIndex < virtualStart || focusedIndex >= virtualEnd) {
-    renderChannelList();
+    renderChannelList(true);
   }
   updateFocus();
   scrollToFocused();
@@ -1335,10 +1351,8 @@ function updateFocus() {
 
 function scrollToFocused() {
   const el = document.querySelector('.channel-item[data-index="' + focusedIndex + '"]');
-  if (el) {
-    // Instant + minimal scroll: see updateGroupFocus.
-    el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
-  }
+  // Instant + minimal scroll: see updateGroupFocus.
+  scrollNearest(document.getElementById('channel-list'), el);
 }
 
 /* Channel toast (top) + buffering pill (bottom) with time-aware hints.

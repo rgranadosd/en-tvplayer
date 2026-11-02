@@ -21,6 +21,7 @@ import {
   playlistsToAdd,
   bufferStalled,
   playlistsToReplace,
+  nearestScrollTop,
 } from './logic.js';
 
 const CHANNELS = [
@@ -312,5 +313,17 @@ describe('playlistsToReplace', () => {
 
   it('does nothing when the URL is already the same', () => {
     expect(playlistsToReplace([tdt, fresh], [fresh], [fresh.url])).toEqual([]);
+  });
+});
+
+describe('nearestScrollTop', () => {
+  it('leaves the scroll alone when the row is already in view', () => {
+    expect(nearestScrollTop(100, 500, 300, 50)).toBe(100);
+  });
+  it('scrolls up just enough to show a row above the view', () => {
+    expect(nearestScrollTop(100, 500, 60, 50)).toBe(60);
+  });
+  it('scrolls down just enough to show a row below the view', () => {
+    expect(nearestScrollTop(100, 500, 580, 50)).toBe(130);
   });
 });
