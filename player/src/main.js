@@ -349,6 +349,12 @@ async function init() {
     }
     const seq = hiddenAtSeq;
     hiddenAtSeq = -1;
+    // The TV keeps the app alive behind Exit/Home, so coming back is not a launch: refresh the list here too.
+    if (channels && channels.length && getSettings().autoRefreshPlaylist !== false) {
+      refreshChannelsInBackground().then((ok) => {
+        if (ok === false) showStaleCacheNotice();
+      });
+    }
     setTimeout(() => {
       if (seq >= 0 && tuneSeq === seq && ui.getCurrentChannel()) player.reloadChannel();
     }, 500);

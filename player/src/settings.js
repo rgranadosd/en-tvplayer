@@ -1004,7 +1004,7 @@ function renderPlaybackCard() {
   html += '</div>';
   html += '<div class="toggle-row">';
   html +=
-    '<div><div class="toggle-label">Auto refresh playlist</div><div class="toggle-desc">Download and update playlist from source on app launch</div></div>';
+    '<div><div class="toggle-label">Auto refresh playlist</div><div class="toggle-desc">Download and update playlist from source every time the app opens</div></div>';
   html +=
     '<div class="toggle' + (autoRefresh ? ' on' : '') + '" id="toggle-auto-refresh"><div class="knob"></div></div>';
   html += '</div>';
