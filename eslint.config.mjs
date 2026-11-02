@@ -13,7 +13,6 @@ export default [
         ...globals.browser,
         __APP_VERSION__: 'readonly',
         __EXTRA_PLAYLISTS__: 'readonly',
-        __EXTRA_GROUPS__: 'readonly',
         __DIAG_URL__: 'readonly',
         __DIAG_URL__: 'readonly',
       },

@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   filterDisplayChannels,
-  regroupChannels,
   findResumeIndex,
   findIntentIndex,
   findRequestedIndex,
@@ -326,31 +325,5 @@ describe('nearestScrollTop', () => {
   });
   it('scrolls down just enough to show a row below the view', () => {
     expect(nearestScrollTop(100, 500, 580, 50)).toBe(130);
-  });
-});
-
-describe('regroupChannels', () => {
-  it('moves matching channels to the rule group, first rule wins', () => {
-    const list = [
-      { name: 'Alpha One', group: '20 - OTHER' },
-      { name: 'alpha two', group: '20 - OTHER' },
-      { name: 'Beta', group: '20 - OTHER' },
-      { name: 'Gamma', group: '10 - NEWS' },
-    ];
-    const rules = [
-      { group: '17 - ALPHA', names: '^alpha' },
-      { group: '19 - BETA', names: '^(beta|alpha)' },
-    ];
-    expect(regroupChannels(list, rules).map((c) => c.group)).toEqual([
-      '17 - ALPHA',
-      '17 - ALPHA',
-      '19 - BETA',
-      '10 - NEWS',
-    ]);
-  });
-  it('leaves the list alone without rules', () => {
-    const list = [{ name: 'Alpha', group: 'X' }];
-    expect(regroupChannels(list, [])).toEqual([{ name: 'Alpha', group: 'X' }]);
-    expect(regroupChannels(list, undefined)[0].group).toBe('X');
   });
 });

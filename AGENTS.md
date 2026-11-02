@@ -78,8 +78,6 @@ en-tvplayer/
   `RAFLIX_TV=comedor npm run build:legacy && RAFLIX_TV=comedor TIZEN_CERT_PROFILE=FreeMyTV npm run tizen:legacy`). The
   build stops without it, with an unknown TV or an unfilled `<…>`; the package name carries the TV. On the TV, a
   build-time playlist under the same name swaps its URL in place (`playlistsToReplace`), so a TV keeps one "Raflix".
-- **Groups of this build**: `player/groups.local.json` (not in git), `[{"group": "17 - …", "names": "^…"}]`, moves
-  each channel whose name matches into that group on every playlist download (`regroupChannels`); same for every TV.
 - Keep both working: the same `player.js`/`player-legacy.js` exports, and no `KeyboardEvent.key`-only handling (2016
   has keyCode only: `SAMSUNG_KEY_CODES` in remote.js). `tizen/install.py` picks the package by the TV's Tizen version.
 - The legacy package must survive a JavaScript failure: its stylesheet is a linked `styles.css` (Vite would inline it

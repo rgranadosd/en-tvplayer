@@ -1,5 +1,4 @@
 import { fetchXtreamChannels } from './xtream.js';
-import { regroupChannels } from './logic.js';
 
 // Chromium 56 has fetch but no AbortController. Keep a real timeout and a
 // cancellable handle there; newer browsers additionally abort the network request.
@@ -379,11 +378,12 @@ export async function fetchPlaylist(url) {
 }
 
 // Playlist entry dispatcher: Xtream logins go through the Xtream API,
-// everything else fetches a playlist URL as before. Either way, this build's own groups are applied.
-export async function fetchPlaylistEntry(entry) {
-  const list =
-    entry && entry.type === 'xtream' ? await fetchXtreamChannels(entry) : await fetchPlaylist(entry ? entry.url : '');
-  return regroupChannels(list, __EXTRA_GROUPS__);
+// everything else fetches a playlist URL as before.
+export function fetchPlaylistEntry(entry) {
+  if (entry && entry.type === 'xtream') {
+    return fetchXtreamChannels(entry);
+  }
+  return fetchPlaylist(entry ? entry.url : '');
 }
 
 // Boot resilience: a transient blip shouldn't strand boot on a dead-end
