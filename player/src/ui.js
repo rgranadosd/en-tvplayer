@@ -9,7 +9,7 @@ import {
   RECENT_GROUP,
 } from './logic.js';
 import { isFavorite, favoriteNames, recentNames } from './favorites.js';
-import { nowNext } from './guide.js';
+import { nowNext, guideByName } from './guide.js';
 
 let channels = [];
 let currentIndex = -1;
@@ -37,9 +37,20 @@ let groupFocusedIndex = 0;
 
 /* Programme guide (Tizen 4+ package): {tvg-id: [{s, e, t}]}, from main.js once it's downloaded */
 let guide = {};
+let guideNames = null; // guideByName(channels, guide), built again when either changes
+
+// A channel's programmes: its own guide id's, or else those of another copy with its name (guideByName).
+function programmesOf(channel) {
+  if (!channel) return undefined;
+  const own = guide[channel.tvgId];
+  if (own && own.length) return own;
+  if (!guideNames) guideNames = guideByName(channels, guide);
+  return guideNames[channel.name];
+}
 
 export function init(channelList, callback) {
   channels = channelList;
+  guideNames = null;
   onChannelSelect = callback;
   currentIndex = -1;
   focusedIndex = 0;
@@ -487,7 +498,7 @@ export function renderChannelList(keepScroll) {
   for (let displayIndex = virtualStart; displayIndex < virtualEnd; displayIndex++) {
     const channel = displayChannels[displayIndex];
     const originalIndex = channels.indexOf(channel);
-    const onNow = nowNext(guide[channel.tvgId], now).now;
+    const onNow = nowNext(programmesOf(channel), now).now;
     const item = document.createElement('div');
     item.className = 'channel-item';
     item.dataset.index = displayIndex;
@@ -1219,6 +1230,7 @@ export function showChannelOsd(channel) {
 /* The guide arrived (or was refreshed): the channel list shows what's on now */
 export function setGuide(next) {
   guide = next || {};
+  guideNames = null;
   if (sidebarMode === 'channels') renderChannelList(true);
 }
 
@@ -1231,7 +1243,7 @@ function clock(ms) {
 const NOW_NEXT_MS = 6000;
 
 export function showNowNext(channel) {
-  const { now, next } = nowNext(channel && guide[channel.tvgId], Date.now());
+  const { now, next } = nowNext(programmesOf(channel), Date.now());
   if (!now && !next) return;
   const line = (label, p, time) =>
     '<div class="osd-guide"><span class="osd-number">' + label + '</span>' + time + ' ' + escapeHtml(p.t) + '</div>';
@@ -1291,6 +1303,7 @@ export function refreshChannelList(newChannels) {
   const playingUrl =
     currentIndex >= 0 && currentIndex < channels.length && channels[currentIndex] ? channels[currentIndex].url : null;
   channels = newChannels;
+  guideNames = null;
   currentIndex = playingUrl ? newChannels.findIndex((ch) => ch && ch.url === playingUrl) : -1;
   focusedIndex = 0;
   extractGroups(channels);

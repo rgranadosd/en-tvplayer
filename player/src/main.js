@@ -814,6 +814,7 @@ function startGuide() {
   guideStarted = true;
   const update = () =>
     refreshGuide(favorites.favoriteNames(), favorites.recentNames(), channels, SHOW_GUIDE).then((guide) => {
+      diag('guide: ' + Object.keys(guide).length + ' channels');
       if (SHOW_GUIDE) ui.setGuide(guide);
     });
   setTimeout(() => {

@@ -63,6 +63,17 @@ export function nowNext(programmes, now) {
   return { now: on, next };
 }
 
+// Every channel name's programmes in `window`, from the first of its copies whose guide id the window has: an event's
+// group repeats channels under ids of its own that the guide doesn't know. {name: [{s, e, t}]}
+export function guideByName(channels, window) {
+  const out = {};
+  for (const c of channels || []) {
+    const list = c && c.tvgId && window && window[c.tvgId];
+    if (list && list.length && !out[c.name]) out[c.name] = list;
+  }
+  return out;
+}
+
 // The guide of the channels with these names: the programmes of the first of their guide ids (tvg-id; a channel can
 // come several times in a playlist and only some copies have one) that the window has. {name: [{s, e, t}]}
 export function guideFor(names, channels, window) {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { guideAddress, parseXmltvTime, guideWindow, guideFor, nowNext } from './guide.js';
+import { guideAddress, parseXmltvTime, guideWindow, guideFor, nowNext, guideByName } from './guide.js';
 import { shareContent } from './logic.js';
 
 const H = 3600000;
@@ -81,5 +81,20 @@ describe('nowNext', () => {
     const list = [p(-2, -1, 'Past'), p(1, 2, 'Later')];
     expect(nowNext(list, T0)).toEqual({ now: null, next: list[1] });
     expect(nowNext(undefined, T0)).toEqual({ now: null, next: null });
+  });
+});
+
+describe('guideByName', () => {
+  it("gives a name the programmes of its first copy the guide knows (an event group's copies carry their own ids)", () => {
+    const window = { cl1: [{ s: 1, e: 2, t: 'Match' }], empty: [] };
+    const channels = [
+      { name: 'Champions 2', tvgId: 'match-1' },
+      { name: 'Champions 2', tvgId: 'empty' },
+      { name: 'Champions 2', tvgId: 'cl1' },
+      { name: 'Event 9', tvgId: 'match-2' },
+      { name: 'No id' },
+    ];
+    expect(guideByName(channels, window)).toEqual({ 'Champions 2': window.cl1 });
+    expect(guideByName(undefined, window)).toEqual({});
   });
 });
