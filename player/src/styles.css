@@ -231,11 +231,26 @@ body {
   min-width: 0;
 }
 
-/* What's on now, from the playlist's guide (Tizen 4+ package): one line, so every row keeps the same height */
+/* With the playlist's guide (Tizen 4+ package): the channel name, and under it what's on now. Every row gets room for
+   both lines, rows without a programme too, so they all keep one height (the virtual scroll measures one stride) */
+.channel-list.with-guide .channel-item {
+  padding-top: calc(8px * var(--tv-scale));
+  padding-bottom: calc(8px * var(--tv-scale));
+}
+
+.channel-list.with-guide .channel-name {
+  height: calc(46px * var(--tv-scale));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+}
+
 .channel-now {
-  max-width: 45%;
-  margin-left: calc(10px * var(--tv-scale));
+  max-width: 100%;
+  margin-top: calc(2px * var(--tv-scale));
   font-size: calc(16px * var(--tv-scale));
+  line-height: 1.2;
   color: #888;
   white-space: nowrap;
   overflow: hidden;

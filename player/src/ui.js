@@ -494,6 +494,8 @@ export function renderChannelList(keepScroll) {
 
   container.innerHTML = '';
   const now = Date.now();
+  // With a guide, every row has room for a second line (what's on now), so all keep one height for the virtual scroll.
+  container.classList.toggle('with-guide', Object.keys(guide).length > 0);
 
   for (let displayIndex = virtualStart; displayIndex < virtualEnd; displayIndex++) {
     const channel = displayChannels[displayIndex];
@@ -509,8 +511,9 @@ export function renderChannelList(keepScroll) {
       '</span>' +
       '<span class="channel-name"><span class="channel-name-text">' +
       escapeHtml(channel.name) +
-      '</span></span>' +
+      '</span>' +
       (onNow ? '<span class="channel-now">' + escapeHtml(onNow.t) + '</span>' : '') +
+      '</span>' +
       (isFavorite(channel) ? '<span class="channel-fav">&#9829;</span>' : '');
 
     item.addEventListener('click', () => {
