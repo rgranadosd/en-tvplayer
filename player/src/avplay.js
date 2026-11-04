@@ -96,6 +96,9 @@ export function play(url, { userAgent, referer, timeoutMs = 30000 } = {}) {
       resolve(false);
       return;
     }
+    // The diag lines here and in stop() go out before AVPlay's synchronous calls (an image request leaves even if the
+    // next call hangs the app): the last of them in the log says which call a 2016 TV got stuck in.
+    const tStop = Date.now();
     stop();
     const obj = el();
     if (!obj) {
@@ -166,8 +169,11 @@ export function play(url, { userAgent, referer, timeoutMs = 30000 } = {}) {
           resolveReady(true);
         },
       });
+      const tOpen = Date.now();
+      diag('avplay: closed in ' + (tOpen - tStop) + ' ms, opening ' + streamLabel(url));
       avplay.open(url);
       active = true;
+      diag('avplay: opened in ' + (Date.now() - tOpen) + ' ms');
       avplay.setDisplayRect(0, 0, 1920, 1080);
       // Each channel keeps its own shape: by default AVPlay stretches every picture to the full rect, so 4:3 channels
       // came out squashed. AUTO_ASPECT_RATIO also follows anamorphic SD; TVs without it get LETTER_BOX.
@@ -186,6 +192,7 @@ export function play(url, { userAgent, referer, timeoutMs = 30000 } = {}) {
         failure = 'error';
         resolveReady(false);
       };
+      diag('avplay: preparing');
       avplay.prepareAsync(() => {
         at('prepared');
         try {
@@ -209,21 +216,24 @@ export function play(url, { userAgent, referer, timeoutMs = 30000 } = {}) {
       // stays stuck on it) is reconnected, once per play() — the new play() watches again.
       clearInterval(freezeTimer);
       let position = -1;
-      freezeTimer = setInterval(() => {
-        if (!firstFrameSeen || userPaused || document.hidden) return;
-        try {
-          const now = avplay.getCurrentTime(); // also asked, in case a firmware calls oncurrentplaytime seldom
-          if (now !== position) {
-            position = now;
-            playedAt = Date.now();
-          }
-        } catch {}
-        if (!bufferStalled(playedAt, Date.now(), FREEZE_MS)) return;
-        clearInterval(freezeTimer);
-        const line = 'frozen ' + streamLabel(url) + ' after ' + Math.round((Date.now() - t0) / 1000) + ' s';
-        setTimeout(() => diag(line), 0);
-        if (frozenCallback) frozenCallback();
-      }, 1000);
+      // Only where someone reconnects (the Tizen 4+ package): it asks AVPlay its position every second.
+      if (frozenCallback) {
+        freezeTimer = setInterval(() => {
+          if (!firstFrameSeen || userPaused || document.hidden) return;
+          try {
+            const now = avplay.getCurrentTime(); // also asked, in case a firmware calls oncurrentplaytime seldom
+            if (now !== position) {
+              position = now;
+              playedAt = Date.now();
+            }
+          } catch {}
+          if (!bufferStalled(playedAt, Date.now(), FREEZE_MS)) return;
+          clearInterval(freezeTimer);
+          const line = 'frozen ' + streamLabel(url) + ' after ' + Math.round((Date.now() - t0) / 1000) + ' s';
+          setTimeout(() => diag(line), 0);
+          frozenCallback();
+        }, 1000);
+      }
       readyTimer = setTimeout(() => {
         if (!firstFrameSeen) failure = 'timeout';
         resolveReady(firstFrameSeen);
@@ -260,8 +270,15 @@ export function stop() {
     active = false;
     try {
       if (isAvailable()) {
+        let state = '?';
+        try {
+          state = window.webapis.avplay.getState();
+        } catch {}
+        diag('avplay: stop (state ' + state + ')');
         window.webapis.avplay.stop();
+        diag('avplay: close');
         window.webapis.avplay.close();
+        diag('avplay: closed');
       }
     } catch {}
   }
