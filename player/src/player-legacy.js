@@ -45,6 +45,7 @@ export function onTokenExpired(callback) {
 export function onTrackChange() {}
 export function onChannelAdvance() {}
 export function onEngineChange() {}
+export function onFrozen() {}
 
 function referer(channel) {
   for (const k of Object.keys(channel.customHeaders || {})) {

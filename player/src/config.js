@@ -16,6 +16,7 @@ const settingsDefaults = {
   channelsFetched: null,
   autoQuality: true,
   autoRefreshPlaylist: true,
+  reconnectFrozen: true, // a picture that freezes (AVPlay) reconnects by itself, quietly (Tizen 4+ package)
   channelSort: 'provider',
   updateCheck: false,
   showWatermark: true,

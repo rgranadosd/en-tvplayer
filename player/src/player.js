@@ -73,6 +73,9 @@ let lastShakaResp = '';
 let useAvplay = false;
 let blackWatchTimer = null;
 const avplayPreferredUrls = new Set();
+let frozenCallback = null;
+let quiet = false; // this tune is a quiet reconnect (reconnectQuietly): no veil, no buffering sign
+let quietNext = false;
 const avplayFailedUrls = new Set();
 
 // Staged loading UX: while the initial manifest load is pending, the center
@@ -383,6 +386,10 @@ export function onTuneAttempt(callback) {
 
 // A channel that started on Shaka and moved to AVPlay (no frames painted): the UI's engine tag follows.
 let engineCallback = null;
+export function onFrozen(callback) {
+  frozenCallback = callback;
+}
+
 export function onEngineChange(callback) {
   engineCallback = callback;
 }
@@ -529,6 +536,8 @@ export async function loadChannel(channel) {
   }
 
   const myToken = ++loadToken;
+  quiet = quietNext;
+  quietNext = false;
   const prevUrl = currentChannel ? currentChannel.url : null;
   currentChannel = channel;
   channel.useProxy = isProxyEnabledFor(channel.url);
@@ -552,7 +561,7 @@ export async function loadChannel(channel) {
   reconnectPending = false;
   stopStallWatchdog();
   hideError();
-  showLoading(true);
+  if (!quiet) showLoading(true);
   advancePending = false;
   userPaused = false;
   // 401/403 retry budget survives same-URL reloads (mid-playback token
@@ -1356,15 +1365,15 @@ async function loadViaAvplay(channel, myToken) {
   hideError();
   if (videoElement) videoElement.classList.add('hidden');
   avplay.onBuffering((buffering, percent) => {
-    if (myToken !== loadToken) return;
+    if (myToken !== loadToken || quiet) return;
     showLoading(false);
     if (typeof percent === 'number') avplayBufferPercent = percent;
     if (bufferingCallback) bufferingCallback(buffering, percent);
   });
   avplay.onFrozen(() => {
     if (myToken !== loadToken) return;
-    logEvent('WARN', 'Picture frozen — reconnecting: ' + (channel.name || channel.url.slice(0, 60)));
-    reloadChannel();
+    logEvent('WARN', 'Picture frozen: ' + (channel.name || channel.url.slice(0, 60)));
+    if (frozenCallback) frozenCallback();
   });
   avplay.onError((type) => {
     if (myToken !== loadToken) return;
@@ -1384,6 +1393,7 @@ async function loadViaAvplay(channel, myToken) {
     referer,
   });
   if (myToken !== loadToken) return false;
+  quiet = false; // from here on, buffering shows as usual
   showLoading(false);
   if (!ok) {
     avplayFailedUrls.add(channel.url);
@@ -1426,6 +1436,14 @@ export function setAutoQuality(enabled) {
   player.configure({ abr: { enabled } });
 }
 
+// A frozen native picture, reconnected without the loading veil or the buffering sign (main.js shows a small toast).
+// Resolves to whether the picture came back.
+export function reconnectQuietly() {
+  if (!useAvplay || !currentChannel) return Promise.resolve(false);
+  quietNext = true;
+  return reloadChannel();
+}
+
 export function reloadChannel() {
   if (useAvplay && currentChannel) {
     const ch = currentChannel;
@@ -1434,8 +1452,7 @@ export function reloadChannel() {
     lastResortAttempts = 0;
     hardReloads = 0;
     tuneAttempt = 0; // loadChannel++ makes this a fresh first try
-    loadChannel(ch);
-    return;
+    return loadChannel(ch);
   }
   if (!currentChannel) return;
   consecutiveErrors = 0;

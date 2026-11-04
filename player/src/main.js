@@ -36,6 +36,9 @@ let tuneSeq = 0;
 // A channel on screen this long counts as watched (the "Recently watched" group); zapping past it doesn't.
 const WATCHED_MS = 10000;
 let watchedTimer = null;
+// A frozen picture reconnects quietly (Settings: Reconnect frozen channels), at most this many times per channel.
+const FROZEN_RECONNECTS = 2;
+let frozenReconnects = 0;
 
 /* Responsive TV scaling: detect screen size and set CSS variable */
 function applyResponsiveScale() {
@@ -202,7 +205,7 @@ const CHANGELOG = [
       },
       {
         type: 'fixed',
-        items: ['A channel whose picture freezes reconnects by itself after 10 s'],
+        items: ['A frozen picture reconnects by itself after 10 s, quietly (Settings > Playback to turn it off)'],
       },
     ],
   },
@@ -739,6 +742,16 @@ function startPlayer() {
     handleStaleToken(deadChannel);
   });
   player.onEngineChange((engine) => ui.setEngineTag(engine));
+  player.onFrozen(() => {
+    if (getSettings().reconnectFrozen === false || frozenReconnects >= FROZEN_RECONNECTS) return;
+    frozenReconnects++;
+    diag('frozen: quiet reconnect ' + frozenReconnects + '/' + FROZEN_RECONNECTS);
+    showProgress('Reconnecting');
+    player.reconnectQuietly().then((ok) => {
+      hideProgress();
+      diag('frozen: reconnect ' + (ok ? 'ok' : 'failed'));
+    });
+  });
 
   if (channels.length === 0) {
     showEmptyState();
@@ -993,6 +1006,7 @@ async function handleChannelSelect(channel, afterStart) {
   // needs the latest intent to decide on a fresh-URL re-tune.
   const mySeq = ++tuneSeq;
   clearTimeout(watchedTimer);
+  frozenReconnects = 0;
   hideLaunchSpinner();
   diag('tune ' + channel.name);
   ui.flashNowPlaying();
