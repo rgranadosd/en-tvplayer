@@ -36,7 +36,7 @@ en-tvplayer/
 │   │   ├── settings.js  Settings page
 │   │   ├── remote.js    Remote control handler
 │   │   ├── update.js    Update checker + opt-in ping
-│   │   ├── config.js    localStorage settings
+│   │   ├── config.js    localStorage settings (en_settings) and, apart, the cached channel list (en_channels)
 │   │   ├── utils.js     Shared utilities
 │   │   ├── favorites.js This TV's favorites (Red key) and recently watched, in localStorage, shown as the first
 │   │   │                groups (logic.js FAVORITES_GROUP, RECENT_GROUP); app-control channel requests
