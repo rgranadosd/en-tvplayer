@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { guideAddress, parseXmltvTime, guideWindow, guideFor } from './guide.js';
+import { guideAddress, parseXmltvTime, guideWindow, guideFor, nowNext } from './guide.js';
 import { shareContent } from './logic.js';
 
 const H = 3600000;
@@ -64,5 +64,22 @@ describe('guideFor and shareContent', () => {
     const out = shareContent(['La 1'], ['DAZN F1'], channels, 7, w);
     expect(Object.keys(out.guide)).toEqual(['DAZN F1', 'La 1']);
     expect(shareContent(['La 1'], [], channels, 7).guide).toEqual({});
+  });
+});
+
+describe('nowNext', () => {
+  const p = (s, e, t) => ({ s: T0 + s * H, e: T0 + e * H, t });
+  it('is what covers now and what starts after it', () => {
+    const list = [p(-1, 0, 'Past'), p(0, 1, 'News'), p(1, 2, 'Film'), p(2, 3, 'Late')];
+    expect(nowNext(list, T0 + 0.5 * H)).toEqual({ now: list[1], next: list[2] });
+  });
+  it('takes the latest start when programmes overlap (an open-ended one included)', () => {
+    const list = [p(-1000, 100000, 'Platform'), p(-1, 2, 'Match'), p(2, 3, 'Next match')];
+    expect(nowNext(list, T0)).toEqual({ now: list[1], next: list[2] });
+  });
+  it('without a programme now: only what comes next; nothing at all: both null', () => {
+    const list = [p(-2, -1, 'Past'), p(1, 2, 'Later')];
+    expect(nowNext(list, T0)).toEqual({ now: null, next: list[1] });
+    expect(nowNext(undefined, T0)).toEqual({ now: null, next: null });
   });
 });

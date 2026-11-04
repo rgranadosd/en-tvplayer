@@ -9,6 +9,7 @@ import {
   RECENT_GROUP,
 } from './logic.js';
 import { isFavorite, favoriteNames, recentNames } from './favorites.js';
+import { nowNext } from './guide.js';
 
 let channels = [];
 let currentIndex = -1;
@@ -33,6 +34,9 @@ let sidebarMode = 'channels';
 let groups = [];
 let selectedGroup = null;
 let groupFocusedIndex = 0;
+
+/* Programme guide (Tizen 4+ package): {tvg-id: [{s, e, t}]}, from main.js once it's downloaded */
+let guide = {};
 
 export function init(channelList, callback) {
   channels = channelList;
@@ -478,10 +482,12 @@ export function renderChannelList(keepScroll) {
   }
 
   container.innerHTML = '';
+  const now = Date.now();
 
   for (let displayIndex = virtualStart; displayIndex < virtualEnd; displayIndex++) {
     const channel = displayChannels[displayIndex];
     const originalIndex = channels.indexOf(channel);
+    const onNow = nowNext(guide[channel.tvgId], now).now;
     const item = document.createElement('div');
     item.className = 'channel-item';
     item.dataset.index = displayIndex;
@@ -493,6 +499,7 @@ export function renderChannelList(keepScroll) {
       '<span class="channel-name"><span class="channel-name-text">' +
       escapeHtml(channel.name) +
       '</span></span>' +
+      (onNow ? '<span class="channel-now">' + escapeHtml(onNow.t) + '</span>' : '') +
       (isFavorite(channel) ? '<span class="channel-fav">&#9829;</span>' : '');
 
     item.addEventListener('click', () => {
@@ -1209,6 +1216,31 @@ export function showChannelOsd(channel) {
   }, 2000);
 }
 
+/* The guide arrived (or was refreshed): the channel list shows what's on now */
+export function setGuide(next) {
+  guide = next || {};
+  if (sidebarMode === 'channels') renderChannelList(true);
+}
+
+function clock(ms) {
+  const d = new Date(ms);
+  return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+}
+
+/* A channel just started: what's on it now and next, in the OSD home (nothing without a guide for it) */
+const NOW_NEXT_MS = 6000;
+
+export function showNowNext(channel) {
+  const { now, next } = nowNext(channel && guide[channel.tvgId], Date.now());
+  if (!now && !next) return;
+  const line = (label, p, time) =>
+    '<div class="osd-guide"><span class="osd-number">' + label + '</span>' + time + ' ' + escapeHtml(p.t) + '</div>';
+  showOsdHtml(
+    (now ? line('Now', now, clock(now.s) + '–' + clock(now.e)) : '') + (next ? line('Next', next, clock(next.s)) : ''),
+    NOW_NEXT_MS,
+  );
+}
+
 /* First-run hint: same OSD home, longer stay, plain guidance text */
 export function showFirstRunHint() {
   showOsdText('No playlist yet — choose Settings from the menu', 5000);
@@ -1220,12 +1252,16 @@ export function showTransientNotice(text, ms = 5000) {
 }
 
 function showOsdText(text, ms) {
+  showOsdHtml(escapeHtml(text), ms);
+}
+
+function showOsdHtml(html, ms) {
   const el = document.getElementById('channel-osd');
   if (!el) return;
   clearTimeout(osdTimer);
   el.classList.remove('fade');
   el.classList.remove('hidden');
-  el.textContent = text;
+  el.innerHTML = html;
   osdTimer = setTimeout(() => {
     el.classList.add('fade');
     setTimeout(() => {

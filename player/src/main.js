@@ -191,6 +191,18 @@ const LAST_SEEN_KEY = 'en_last_seen_version';
 // RAFLIX IPTV's own history; EN IPTV's (what it was forked from) is in CHANGELOG.md.
 const CHANGELOG = [
   {
+    version: '1.0.3',
+    sections: [
+      {
+        type: 'added',
+        items: [
+          "Programme guide: what's on now next to each channel in the list",
+          'Now and next for a few seconds when a channel starts',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.0.2',
     sections: [
       {
@@ -790,15 +802,20 @@ function shareTvLists() {
   shareLists(favorites.favoriteNames(), favorites.recentNames(), channels);
 }
 
-// Their guide too: first 10 s after a channel is up (never slowing it), then every 30 minutes.
+// Their guide too: first 10 s after a channel is up (never slowing it), then every 30 minutes. The Tizen 4+ package
+// also shows it (now on in the channel list, now and next when a channel starts); the 2016-2017 one only shares it.
 const GUIDE_AFTER_MS = 10000;
 const GUIDE_EVERY_MS = 30 * 60000;
+const SHOW_GUIDE = import.meta.env.MODE !== 'legacy';
 let guideStarted = false;
 
 function startGuide() {
   if (guideStarted) return;
   guideStarted = true;
-  const update = () => refreshGuide(favorites.favoriteNames(), favorites.recentNames(), channels);
+  const update = () =>
+    refreshGuide(favorites.favoriteNames(), favorites.recentNames(), channels, SHOW_GUIDE).then((guide) => {
+      if (SHOW_GUIDE) ui.setGuide(guide);
+    });
   setTimeout(() => {
     update();
     setInterval(update, GUIDE_EVERY_MS);
@@ -1038,6 +1055,7 @@ async function handleChannelSelect(channel, afterStart) {
   tuneSucceeded = ok === true;
   if (ok && mySeq === tuneSeq) {
     startGuide();
+    ui.showNowNext(channel);
     watchedTimer = setTimeout(() => {
       favorites.noteWatched(channel);
       ui.updateTvLists();

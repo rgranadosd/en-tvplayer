@@ -1,4 +1,5 @@
-// The programme guide (XMLTV) for what this TV shares with Raflix: pure, like logic.js — inputs in, values out.
+// The programme guide (XMLTV) for the channel list and what this TV shares with Raflix: pure, like logic.js — inputs
+// in, values out.
 
 // The guide's address in a playlist's first line (#EXTM3U url-tvg="…", or x-tvg-url): the first of a list; '' if none.
 export function guideAddress(m3uText) {
@@ -50,6 +51,16 @@ export function guideWindow(xml, from, until) {
   }
   Object.keys(out).forEach((id) => out[id].sort((a, b) => a.s - b.s));
   return out;
+}
+
+// A channel's programmes ([{s, e, t}], by start) at `now`: the one on (of overlapping ones, the latest to start: a
+// platform's open-ended programme gives way to the event) and the first to start after it. {now, next}, null if none.
+export function nowNext(programmes, now) {
+  let on = null;
+  for (const p of programmes || []) if (p.s <= now && now < p.e) on = p;
+  const after = on ? on.e : now;
+  const next = (programmes || []).find((p) => p !== on && p.s >= after && p.s > now) || null;
+  return { now: on, next };
 }
 
 // The guide of the channels with these names: the programmes of the first of their guide ids (tvg-id; a channel can

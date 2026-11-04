@@ -231,6 +231,22 @@ body {
   min-width: 0;
 }
 
+/* What's on now, from the playlist's guide (Tizen 4+ package): one line, so every row keeps the same height */
+.channel-now {
+  max-width: 45%;
+  margin-left: calc(10px * var(--tv-scale));
+  font-size: calc(16px * var(--tv-scale));
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.channel-item.focused .channel-now,
+.channel-item.active .channel-now {
+  color: #ccc;
+}
+
 .channel-fav {
   margin-left: calc(8px * var(--tv-scale));
   font-size: calc(20px * var(--tv-scale));
@@ -765,6 +781,17 @@ body {
 .channel-osd .osd-number {
   color: #ed421f;
   margin-right: 12px;
+}
+
+/* Now and next when a channel starts (Tizen 4+ package, from the playlist's guide) */
+.channel-osd .osd-guide {
+  max-width: calc(900px * var(--tv-scale));
+  font-size: calc(22px * var(--tv-scale));
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Progress toast for right sidebar actions */
