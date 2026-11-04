@@ -2,6 +2,7 @@ import { diag } from './diag.js';
 import { bufferStalled } from './logic.js';
 
 const STALL_MS = 8000; // a buffer that stops moving this long before the first frame: retried at once
+const FREEZE_MS = 10000; // playing, but the picture hasn't moved this long: reconnected (what leaving and coming back did)
 // Native playback via Samsung AVPlay (webapis.avplay).
 // Fallback for (a) streams the browser decoder cannot render (e.g. interlaced
 // MBAFF H264 — buffering completes, zero frames painted, no Shaka error) and
@@ -13,6 +14,7 @@ const STALL_MS = 8000; // a buffer that stops moving this long before the first 
 let avObject = null;
 let bufferingCallback = null;
 let errorCallback = null;
+let frozenCallback = null;
 let readyResolve = null;
 let readyTimer = null;
 let firstFrameSeen = false;
@@ -24,6 +26,8 @@ let active = false;
 // a 2016 TV a live TS can take 20 s to start, and it's still coming). Callers decide whether to retry.
 let failure = null;
 let stallTimer = null;
+let freezeTimer = null;
+let userPaused = false;
 let readyReport = null; // the zapping line for the diagnostics, sent once per play()
 
 export function lastFailure() {
@@ -70,6 +74,11 @@ function streamLabel(url) {
   return host + '/…' + ext;
 }
 
+// Called once when a playing channel freezes (no progress for FREEZE_MS, not paused, app on screen).
+export function onFrozen(callback) {
+  frozenCallback = callback;
+}
+
 export function onBuffering(callback) {
   bufferingCallback = callback;
 }
@@ -96,6 +105,7 @@ export function play(url, { userAgent, referer, timeoutMs = 30000 } = {}) {
     obj.classList.remove('hidden');
     firstFrameSeen = false;
     failure = null;
+    userPaused = false;
     // Zapping timings for the diagnostic build (no-op without player/diag.local.json): only noted here, in ms since
     // the channel was asked; one line goes out after the first frame or the failure, never from AVPlay's callbacks.
     const t0 = Date.now();
@@ -103,6 +113,7 @@ export function play(url, { userAgent, referer, timeoutMs = 30000 } = {}) {
     const at = (what) => marks.push(what + ' +' + (Date.now() - t0));
     let lastPct = -1;
     let progressAt = 0;
+    let playedAt = 0;
     const report = (outcome) => {
       const line = 'zap ' + streamLabel(url) + ' ' + outcome + ' +' + (Date.now() - t0) + 'ms: ' + marks.join(', ');
       setTimeout(() => diag(line), 0);
@@ -132,6 +143,7 @@ export function play(url, { userAgent, referer, timeoutMs = 30000 } = {}) {
           if (firstFrameSeen && bufferingCallback) bufferingCallback(false);
         },
         oncurrentplaytime: () => {
+          playedAt = Date.now();
           if (!firstFrameSeen) {
             firstFrameSeen = true;
             clearInterval(stallTimer);
@@ -193,6 +205,25 @@ export function play(url, { userAgent, referer, timeoutMs = 30000 } = {}) {
         if (readyResolve) resolveReady(false);
         else if (errorCallback) errorCallback('STALLED');
       }, 1000);
+      // After the first frame: a picture that stops moving and doesn't come back (the server's stream stalled; AVPlay
+      // stays stuck on it) is reconnected, once per play() — the new play() watches again.
+      clearInterval(freezeTimer);
+      let position = -1;
+      freezeTimer = setInterval(() => {
+        if (!firstFrameSeen || userPaused || document.hidden) return;
+        try {
+          const now = avplay.getCurrentTime(); // also asked, in case a firmware calls oncurrentplaytime seldom
+          if (now !== position) {
+            position = now;
+            playedAt = Date.now();
+          }
+        } catch {}
+        if (!bufferStalled(playedAt, Date.now(), FREEZE_MS)) return;
+        clearInterval(freezeTimer);
+        const line = 'frozen ' + streamLabel(url) + ' after ' + Math.round((Date.now() - t0) / 1000) + ' s';
+        setTimeout(() => diag(line), 0);
+        if (frozenCallback) frozenCallback();
+      }, 1000);
       readyTimer = setTimeout(() => {
         if (!firstFrameSeen) failure = 'timeout';
         resolveReady(firstFrameSeen);
@@ -205,12 +236,14 @@ export function play(url, { userAgent, referer, timeoutMs = 30000 } = {}) {
 }
 
 export function pause() {
+  userPaused = true;
   try {
     if (active && isAvailable()) window.webapis.avplay.pause();
   } catch {}
 }
 
 export function resume() {
+  userPaused = false;
   try {
     if (active && isAvailable()) window.webapis.avplay.play();
   } catch {}
@@ -219,6 +252,7 @@ export function resume() {
 export function stop() {
   clearReadyTimer();
   clearInterval(stallTimer);
+  clearInterval(freezeTimer);
   readyResolve = null;
   readyReport = null;
   firstFrameSeen = false;

@@ -196,9 +196,13 @@ const CHANGELOG = [
       {
         type: 'added',
         items: [
-          "Programme guide: what's on now next to each channel in the list",
+          "Programme guide: what's on now under each channel in the list",
           'Now and next for a few seconds when a channel starts',
         ],
+      },
+      {
+        type: 'fixed',
+        items: ['A channel whose picture freezes reconnects by itself after 10 s'],
       },
     ],
   },

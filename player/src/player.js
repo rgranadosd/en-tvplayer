@@ -1361,6 +1361,11 @@ async function loadViaAvplay(channel, myToken) {
     if (typeof percent === 'number') avplayBufferPercent = percent;
     if (bufferingCallback) bufferingCallback(buffering, percent);
   });
+  avplay.onFrozen(() => {
+    if (myToken !== loadToken) return;
+    logEvent('WARN', 'Picture frozen — reconnecting: ' + (channel.name || channel.url.slice(0, 60)));
+    reloadChannel();
+  });
   avplay.onError((type) => {
     if (myToken !== loadToken) return;
     avplayFailedUrls.add(channel.url);
