@@ -31,36 +31,30 @@ const CHANNELS = [
 ];
 
 describe('filterDisplayChannels', () => {
-  it('returns everything when nothing is hidden or selected', () => {
-    expect(filterDisplayChannels(CHANNELS, [], null)).toHaveLength(3);
-    expect(filterDisplayChannels(CHANNELS, [], 'all')).toHaveLength(3);
+  it('returns everything when nothing is selected', () => {
+    expect(filterDisplayChannels(CHANNELS, null)).toHaveLength(3);
+    expect(filterDisplayChannels(CHANNELS, 'all')).toHaveLength(3);
   });
 
-  it('removes hidden groups, treating missing group as Ungrouped', () => {
-    const visible = filterDisplayChannels(CHANNELS, ['Sports', 'Ungrouped'], null);
-    expect(visible.map((c) => c.name)).toEqual(['BBC']);
-  });
-
-  it('filters to the selected group after hiding', () => {
-    expect(filterDisplayChannels(CHANNELS, [], 'News').map((c) => c.name)).toEqual(['BBC']);
-    expect(filterDisplayChannels(CHANNELS, ['News'], 'News')).toEqual([]);
+  it('filters to the selected group, treating missing group as Ungrouped', () => {
+    expect(filterDisplayChannels(CHANNELS, 'News').map((c) => c.name)).toEqual(['BBC']);
+    expect(filterDisplayChannels(CHANNELS, 'Ungrouped').map((c) => c.name)).toEqual(['Local']);
   });
 
   it('is null-safe', () => {
-    expect(filterDisplayChannels(null, null, null)).toEqual([]);
+    expect(filterDisplayChannels(null, null)).toEqual([]);
   });
 });
 
 describe('findResumeIndex', () => {
   it('finds the saved URL even after a re-sort', () => {
     const resorted = [CHANNELS[2], CHANNELS[0], CHANNELS[1]];
-    expect(findResumeIndex(resorted, 'https://x.example.com/espn', [])).toBe(2);
+    expect(findResumeIndex(resorted, 'https://x.example.com/espn')).toBe(2);
   });
 
-  it('returns -1 when nothing saved, gone, or hidden', () => {
-    expect(findResumeIndex(CHANNELS, null, [])).toBe(-1);
-    expect(findResumeIndex(CHANNELS, 'https://x.example.com/gone', [])).toBe(-1);
-    expect(findResumeIndex(CHANNELS, 'https://x.example.com/espn', ['Sports'])).toBe(-1);
+  it('returns -1 when nothing saved or gone', () => {
+    expect(findResumeIndex(CHANNELS, null)).toBe(-1);
+    expect(findResumeIndex(CHANNELS, 'https://x.example.com/gone')).toBe(-1);
   });
 });
 
@@ -266,21 +260,19 @@ describe('findRequestedIndex', () => {
   const list = [
     { name: 'ESPORT3', group: '00 - Match' },
     { name: 'ESPORT3', group: 'OTROS' },
-    { name: 'La 1', group: 'Hidden' },
+    { name: 'La 1', group: 'News' },
     { name: 'Loose' },
   ];
   it('prefers the same name in the same group', () => {
-    expect(findRequestedIndex(list, { name: 'ESPORT3', group: 'OTROS' }, [])).toBe(1);
+    expect(findRequestedIndex(list, { name: 'ESPORT3', group: 'OTROS' })).toBe(1);
   });
   it('falls back to the first with that name', () => {
-    expect(findRequestedIndex(list, { name: 'ESPORT3', group: 'Gone' }, [])).toBe(0);
-    expect(findRequestedIndex(list, { name: 'Loose', group: '' }, [])).toBe(3);
+    expect(findRequestedIndex(list, { name: 'ESPORT3', group: 'Gone' })).toBe(0);
+    expect(findRequestedIndex(list, { name: 'Loose', group: '' })).toBe(3);
   });
-  it('skips hidden groups and unknown names', () => {
-    expect(findRequestedIndex(list, { name: 'La 1', group: 'Hidden' }, ['Hidden'])).toBe(-1);
-    expect(findRequestedIndex(list, { name: 'ESPORT3', group: 'OTROS' }, ['OTROS'])).toBe(0);
-    expect(findRequestedIndex(list, { name: 'Nope' }, [])).toBe(-1);
-    expect(findRequestedIndex(list, null, [])).toBe(-1);
+  it('is -1 for unknown names', () => {
+    expect(findRequestedIndex(list, { name: 'Nope' })).toBe(-1);
+    expect(findRequestedIndex(list, null)).toBe(-1);
   });
 });
 

@@ -1,5 +1,4 @@
 import { escapeHtml } from './utils.js';
-import { getHiddenGroups } from './config.js';
 import {
   filterDisplayChannels,
   slowHintFor,
@@ -121,8 +120,7 @@ export function init(channelList, callback) {
 }
 
 export function extractGroups(channelList) {
-  const hidden = getHiddenGroups();
-  const visible = (channelList || []).filter((ch) => !hidden.includes((ch && ch.group) || 'Ungrouped'));
+  const visible = channelList || [];
   const groupMap = {};
   for (const ch of visible) {
     const g = ch.group || 'Ungrouped';
@@ -138,7 +136,7 @@ export function extractGroups(channelList) {
     }));
   // This TV's favorites and recent channels first, when they have any.
   const own = [FAVORITES_GROUP, RECENT_GROUP]
-    .map((name) => ({ name, channels: filterDisplayChannels(channelList, hidden, name, tvLists()) }))
+    .map((name) => ({ name, channels: filterDisplayChannels(channelList, name, tvLists()) }))
     .filter((g) => g.channels.length)
     .map((g) => ({ ...g, count: g.channels.length }));
   groups = [{ name: 'All Channels', count: visible.length, channels: visible }, ...own, ...realGroups];
@@ -281,10 +279,7 @@ function isSearchInputFocused() {
 function computeSearchResults() {
   const q = searchQuery.trim().toLowerCase();
   if (!q) return [];
-  const hidden = getHiddenGroups();
-  return channels.filter(
-    (ch) => !hidden.includes((ch && ch.group) || 'Ungrouped') && (ch.name || '').toLowerCase().includes(q),
-  );
+  return channels.filter((ch) => (ch.name || '').toLowerCase().includes(q));
 }
 
 export function enterSearch() {
@@ -452,18 +447,16 @@ export function showGroupList() {
   updateSidebarTitle();
 }
 
-/* Re-derive groups after the hidden-groups setting changes, preserving the
-   playing mark and focus. Falls back to the group list when the open group
-   was just hidden. */
-export function refreshGroupVisibility() {
+/* Re-derive groups when Settings closes, preserving the playing mark and
+   focus. */
+export function refreshGroups() {
   if (sidebarMode === 'search') {
     searchResults = computeSearchResults();
     renderSearchResults();
     return;
   }
   extractGroups(channels);
-  const hidden = getHiddenGroups();
-  if (sidebarMode === 'groups' || (selectedGroup && selectedGroup !== 'all' && hidden.includes(selectedGroup))) {
+  if (sidebarMode === 'groups') {
     selectedGroup = null;
     showGroupList();
   } else {
@@ -632,7 +625,7 @@ export function selectFocused() {
 }
 
 export function getDisplayChannels() {
-  return filterDisplayChannels(channels, getHiddenGroups(), selectedGroup, tvLists());
+  return filterDisplayChannels(channels, selectedGroup, tvLists());
 }
 
 export function jumpToNumber(num, skipFullscreen) {

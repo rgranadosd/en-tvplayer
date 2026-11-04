@@ -32,17 +32,11 @@ describe('channelsByName', () => {
 describe('filterDisplayChannels with the TV lists', () => {
   const lists = { favorites: ['La 1', 'Hidden One'], recent: ['DAZN F1', 'La 1'] };
   it('shows the favorites and the recent ones as groups, in their order', () => {
-    expect(filterDisplayChannels(CHANNELS, [], FAVORITES_GROUP, lists).map((c) => c.name)).toEqual([
-      'La 1',
-      'Hidden One',
-    ]);
-    expect(filterDisplayChannels(CHANNELS, [], RECENT_GROUP, lists).map((c) => c.name)).toEqual(['DAZN F1', 'La 1']);
-  });
-  it('leaves out the channels of hidden groups', () => {
-    expect(filterDisplayChannels(CHANNELS, ['Adult'], FAVORITES_GROUP, lists).map((c) => c.name)).toEqual(['La 1']);
+    expect(filterDisplayChannels(CHANNELS, FAVORITES_GROUP, lists).map((c) => c.name)).toEqual(['La 1', 'Hidden One']);
+    expect(filterDisplayChannels(CHANNELS, RECENT_GROUP, lists).map((c) => c.name)).toEqual(['DAZN F1', 'La 1']);
   });
   it('is empty without the lists', () => {
-    expect(filterDisplayChannels(CHANNELS, [], RECENT_GROUP)).toEqual([]);
+    expect(filterDisplayChannels(CHANNELS, RECENT_GROUP)).toEqual([]);
   });
 });
 

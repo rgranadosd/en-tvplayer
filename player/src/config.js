@@ -26,7 +26,6 @@ const settingsDefaults = {
   proxyUrl: 'https://localhost:5001',
   proxyChannels: {},
   showProxyMenu: false,
-  hiddenGroups: [],
   // Resume: last playing channel (stable URL, not index) + group view.
   lastChannelUrl: null,
   lastGroup: null,
@@ -112,15 +111,6 @@ export function getActivePlaylist() {
     return s.playlists[s.activePlaylistIndex];
   }
   return null;
-}
-
-export function getHiddenGroups() {
-  try {
-    const hg = getSettings().hiddenGroups;
-    return Array.isArray(hg) ? hg : [];
-  } catch {
-    return [];
-  }
 }
 
 export function saveSettings(partial) {

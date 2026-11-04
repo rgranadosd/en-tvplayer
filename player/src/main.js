@@ -1,4 +1,4 @@
-import { getSettings, saveSettings, getActivePlaylist, getHiddenGroups, APP_VERSION } from './config.js';
+import { getSettings, saveSettings, getActivePlaylist, APP_VERSION } from './config.js';
 import * as player from './player.js';
 import * as ui from './ui.js';
 import * as remote from './remote.js';
@@ -50,7 +50,7 @@ function applyResponsiveScale() {
 applyResponsiveScale();
 
 function getDisplayChannels() {
-  return filterDisplayChannels(channels, getHiddenGroups(), selectedGroup);
+  return filterDisplayChannels(channels, selectedGroup);
 }
 
 const BOOT_TITLE = 'RAFLIX IPTV';
@@ -565,7 +565,7 @@ function startPlayer() {
       settings.hide();
       ui.stopInactivityTimer();
       refreshProxyMenu();
-      ui.refreshGroupVisibility();
+      ui.refreshGroups();
       selectedGroup = ui.getSelectedGroup();
       showPlayer();
     },
@@ -593,7 +593,7 @@ function startPlayer() {
     if (settings.isVisible()) {
       settings.hide();
       refreshProxyMenu();
-      ui.refreshGroupVisibility();
+      ui.refreshGroups();
       selectedGroup = ui.getSelectedGroup();
       showPlayer();
       ui.stopInactivityTimer();
@@ -772,7 +772,7 @@ function restoreLastSession() {
   let view = null;
   try {
     const s = getSettings();
-    const at = findResumeIndex(channels, s && s.lastChannelUrl, getHiddenGroups());
+    const at = findResumeIndex(channels, s && s.lastChannelUrl);
     if (at >= 0) {
       const ch = channels[at];
       const g = (ch && ch.group) || 'Ungrouped';
@@ -805,7 +805,7 @@ function restoreLastSession() {
 
 // A channel another app asked for (by name; URLs rotate), in its group's view.
 function openRequestedChannel(request) {
-  const at = findRequestedIndex(channels, request, getHiddenGroups());
+  const at = findRequestedIndex(channels, request);
   if (at < 0) return false;
   const g = channels[at].group || 'Ungrouped';
   ui.showGroupChannels(ui.getGroups().some((x) => x.name === g) ? g : 'All Channels');
@@ -1380,7 +1380,7 @@ function handleRemoteAction(action, value) {
       case 'back':
         settings.hide();
         refreshProxyMenu();
-        ui.refreshGroupVisibility();
+        ui.refreshGroups();
         selectedGroup = ui.getSelectedGroup();
         // BUG-018: with no playlist yet, initialize the empty shell so the
         // sidebars and Settings stay reachable.

@@ -11,9 +11,8 @@ export const RECENT_GROUP = 'Recently watched';
 export const RECENT_MAX = 20;
 
 // lists: {favorites, recent}, channel names; the two groups above show them in their order.
-export function filterDisplayChannels(allChannels, hiddenGroups, selectedGroup, lists) {
-  const hidden = hiddenGroups || [];
-  const visible = (allChannels || []).filter((ch) => !hidden.includes((ch && ch.group) || 'Ungrouped'));
+export function filterDisplayChannels(allChannels, selectedGroup, lists) {
+  const visible = allChannels || [];
   if (selectedGroup === FAVORITES_GROUP) return channelsByName(visible, lists && lists.favorites);
   if (selectedGroup === RECENT_GROUP) return channelsByName(visible, lists && lists.recent);
   if (selectedGroup === 'all' || !selectedGroup) return visible;
@@ -22,15 +21,10 @@ export function filterDisplayChannels(allChannels, hiddenGroups, selectedGroup, 
 
 // Boot resume: identity is the channel URL (stable across playlist
 // refresh and re-sort); a raw index would rot on every fetch. Returns
-// the index, or -1 when nothing was saved, the channel is gone, or its
-// group is now hidden.
-export function findResumeIndex(channels, lastChannelUrl, hiddenGroups) {
+// the index, or -1 when nothing was saved or the channel is gone.
+export function findResumeIndex(channels, lastChannelUrl) {
   if (!lastChannelUrl) return -1;
-  const at = (channels || []).findIndex((ch) => ch && ch.url === lastChannelUrl);
-  if (at < 0) return -1;
-  const group = (channels[at] && channels[at].group) || 'Ungrouped';
-  if ((hiddenGroups || []).includes(group)) return -1;
-  return at;
+  return (channels || []).findIndex((ch) => ch && ch.url === lastChannelUrl);
 }
 
 // Background-refresh re-tune: names + groups survive token rotation,
@@ -43,13 +37,12 @@ export function findIntentIndex(channels, intent) {
 }
 
 // A channel asked for by name (a favorite opened from another app): the same
-// name in the same group first, else the first with that name. Channels in
-// hidden groups don't count. Returns the index, or -1.
-export function findRequestedIndex(channels, request, hiddenGroups) {
+// name in the same group first, else the first with that name. Returns the
+// index, or -1.
+export function findRequestedIndex(channels, request) {
   if (!request || !request.name) return -1;
-  const hidden = hiddenGroups || [];
   const groupOf = (ch) => (ch && ch.group) || 'Ungrouped';
-  const usable = (ch) => ch && ch.name === request.name && !hidden.includes(groupOf(ch));
+  const usable = (ch) => ch && ch.name === request.name;
   const list = channels || [];
   const exact = list.findIndex((ch) => usable(ch) && groupOf(ch) === (request.group || 'Ungrouped'));
   return exact >= 0 ? exact : list.findIndex(usable);
