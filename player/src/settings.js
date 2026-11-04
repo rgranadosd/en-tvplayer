@@ -1,4 +1,4 @@
-import { getSettings, saveSettings, getActivePlaylist, APP_VERSION } from './config.js';
+import { getSettings, saveSettings, getActivePlaylist, saveCachedChannels, APP_VERSION } from './config.js';
 import { fetchPlaylistEntry, escapeHtml } from './utils.js';
 import { login as xtreamLogin } from './xtream.js';
 import { setConsented } from './update.js';
@@ -1101,7 +1101,7 @@ async function handleFetch() {
   statusEl.classList.remove('hidden');
   try {
     const channels = await fetchPlaylistEntry(active);
-    saveSettings({ channels, channelsFetched: new Date().toISOString() });
+    saveCachedChannels(channels);
     statusEl.textContent = 'Fetched ' + channels.length + ' channels';
     if (onPlaylistFetched) onPlaylistFetched(channels);
   } catch (e) {

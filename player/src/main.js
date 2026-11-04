@@ -1,4 +1,11 @@
-import { getSettings, saveSettings, getActivePlaylist, APP_VERSION } from './config.js';
+import {
+  getSettings,
+  saveSettings,
+  getActivePlaylist,
+  getCachedChannels,
+  saveCachedChannels,
+  APP_VERSION,
+} from './config.js';
 import * as player from './player.js';
 import * as ui from './ui.js';
 import * as remote from './remote.js';
@@ -440,19 +447,20 @@ async function init() {
 
   const s = getSettings();
   const activePlaylist = getActivePlaylist();
+  const cached = getCachedChannels();
 
   const autoRefresh = s.autoRefreshPlaylist !== false;
 
-  if (quietBoot && s.channels && s.channels.length > 0) {
+  if (quietBoot && cached.length > 0) {
     // Opened by Raflix: the fresh list first (stream URLs rotate, event groups change), then the
     // tune; the cache only if the download fails. The start-up spinner covers the wait.
-    channels = (await freshChannels()) || s.channels;
+    channels = (await freshChannels()) || cached;
     startPlayer();
   } else if (autoRefresh && activePlaylist && activePlaylist.url) {
     // Auto-refresh: always fetch fresh playlist on boot.
-    if (s.channels && s.channels.length > 0) {
+    if (cached.length > 0) {
       // Cached channels available — show instantly, refresh in background.
-      channels = s.channels;
+      channels = cached;
       startPlayer();
       showBootSplash('Updating playlist...');
       refreshChannelsInBackground().then((ok) => {
@@ -465,7 +473,7 @@ async function init() {
       showBootSplash('Downloading playlist...', true);
       try {
         const newChannels = await fetchPlaylistWithRetry(activePlaylist);
-        saveSettings({ channels: newChannels, channelsFetched: new Date().toISOString() });
+        saveCachedChannels(newChannels);
         channels = newChannels;
         hideBootSplashAndMaybeWhatsNew();
         startPlayer();
@@ -476,10 +484,10 @@ async function init() {
         showFirstRun();
       }
     }
-  } else if (s.channels && s.channels.length > 0) {
+  } else if (cached.length > 0) {
     // Auto-refresh OFF: load from localStorage only, no network fetch —
     // hold the splash 1.5s past the tagline so it doesn't flash by.
-    channels = s.channels;
+    channels = cached;
     startPlayer();
     showBootSplash('Loading...');
     hideBootSplashAndMaybeWhatsNew(BOOT_IDLE_HOLD_MS);
@@ -488,7 +496,7 @@ async function init() {
     showBootSplash('Loading playlist...', true);
     try {
       const newChannels = await fetchPlaylistWithRetry(activePlaylist);
-      saveSettings({ channels: newChannels, channelsFetched: new Date().toISOString() });
+      saveCachedChannels(newChannels);
       channels = newChannels;
       hideBootSplashAndMaybeWhatsNew();
       startPlayer();
@@ -905,7 +913,7 @@ function showFirstRun() {
   ui.toggleRightSidebar();
   showBootSplash('Loading...');
   const s = getSettings();
-  const fresh = (s.playlists || []).length === 0 && (s.channels || []).length === 0;
+  const fresh = (s.playlists || []).length === 0 && getCachedChannels().length === 0;
   if (fresh) {
     // True first install: offer the source choice directly, no hint toast.
     // Skip if the user already opened Settings meanwhile.
@@ -1204,7 +1212,7 @@ async function freshChannels() {
   if (!active || !active.url) return null;
   try {
     const list = await fetchPlaylistWithRetry(active, 1);
-    saveSettings({ channels: list, channelsFetched: new Date().toISOString() });
+    saveCachedChannels(list);
     diag('fresh playlist: ' + list.length + ' channels');
     return list;
   } catch (e) {
@@ -1215,7 +1223,7 @@ async function freshChannels() {
 
 // Swap in a freshly fetched channel list (persist + sort + repaint).
 function applyFreshChannels(newChannels) {
-  saveSettings({ channels: newChannels, channelsFetched: new Date().toISOString() });
+  saveCachedChannels(newChannels);
   sortChannels(newChannels);
   channels = newChannels;
   ui.refreshChannelList(channels);
@@ -1627,7 +1635,7 @@ export async function refreshChannels() {
   if (active && active.url) {
     try {
       const newChannels = await fetchPlaylistEntry(active);
-      saveSettings({ channels: newChannels, channelsFetched: new Date().toISOString() });
+      saveCachedChannels(newChannels);
       sortChannels(newChannels);
       channels = newChannels;
       ui.refreshChannelList(channels);

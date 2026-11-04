@@ -1,6 +1,9 @@
 import { playlistsToAdd, playlistsToReplace } from './logic.js';
 
 const SETTINGS_KEY = 'en_settings';
+// The active playlist's channels, apart from the settings: ~300 KB for 800 channels, which every settings read and
+// write would otherwise parse and copy (seconds per channel change on a 2016 TV).
+const CHANNELS_KEY = 'en_channels';
 const DEFAULT_PLAYLIST = {
   name: 'TDTChannels España',
   type: 'm3u',
@@ -12,7 +15,6 @@ export const APP_VERSION = __APP_VERSION__;
 const settingsDefaults = {
   playlists: [DEFAULT_PLAYLIST],
   activePlaylistIndex: 0,
-  channels: [],
   channelsFetched: null,
   autoQuality: true,
   autoRefreshPlaylist: true,
@@ -36,6 +38,17 @@ export function getSettings() {
     const raw = localStorage.getItem(SETTINGS_KEY);
     const defaults = { ...settingsDefaults, playlists: [{ ...DEFAULT_PLAYLIST }] };
     const s = raw ? { ...defaults, ...JSON.parse(raw) } : { ...defaults };
+    // Channels an earlier version kept inside the settings: moved to their own key, once.
+    if ('channels' in s) {
+      try {
+        if (Array.isArray(s.channels) && s.channels.length)
+          localStorage.setItem(CHANNELS_KEY, JSON.stringify(s.channels));
+      } catch {}
+      delete s.channels;
+      try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+      } catch {}
+    }
     // Migration from legacy single playlistUrl
     if ((!s.playlists || s.playlists.length === 0) && s.playlistUrl) {
       s.playlists = [{ name: 'Playlist 1', url: s.playlistUrl }];
@@ -73,7 +86,9 @@ export function getSettings() {
       s.extraPlaylistsAdded = [...(s.extraPlaylistsAdded || []), ...swaps.map((w) => w.playlist.url)];
       // The channels kept from the active one carry the old login in their URLs: downloaded again at start.
       if (swaps.some((w) => w.index === s.activePlaylistIndex)) {
-        s.channels = [];
+        try {
+          localStorage.removeItem(CHANNELS_KEY);
+        } catch {}
         s.channelsFetched = null;
       }
       try {
@@ -96,7 +111,7 @@ export function getSettings() {
     // Never fetched anything and still on the stock playlist: start on the first build-time one, the owner's (the
     // stock one is a fallback). A TV that has used any list keeps its choice.
     const active = s.playlists[s.activePlaylistIndex];
-    if (!(s.channels || []).length && active && active.url === DEFAULT_PLAYLIST.url) {
+    if (!s.channelsFetched && active && active.url === DEFAULT_PLAYLIST.url) {
       const own = s.playlists.findIndex((p) => (__EXTRA_PLAYLISTS__ || []).some((x) => x.url === p.url));
       if (own >= 0) s.activePlaylistIndex = own;
     }
@@ -111,6 +126,26 @@ export function getActivePlaylist() {
     return s.playlists[s.activePlaylistIndex];
   }
   return null;
+}
+
+// The channels last downloaded for the active playlist ([] if none).
+export function getCachedChannels() {
+  try {
+    const list = JSON.parse(localStorage.getItem(CHANNELS_KEY));
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+// A freshly downloaded list: kept apart, and its date in the settings (Channel Source shows it).
+export function saveCachedChannels(list) {
+  try {
+    localStorage.setItem(CHANNELS_KEY, JSON.stringify(list || []));
+  } catch (e) {
+    console.warn('Failed to save channels:', e);
+  }
+  saveSettings({ channelsFetched: new Date().toISOString() });
 }
 
 export function saveSettings(partial) {
