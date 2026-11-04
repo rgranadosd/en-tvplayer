@@ -398,12 +398,14 @@ async function init() {
     }
     const seq = hiddenAtSeq;
     hiddenAtSeq = -1;
-    // The TV keeps the app alive behind Exit/Home, so coming back is not a launch: refresh the list here too.
-    if (channels && channels.length && getSettings().autoRefreshPlaylist !== false) {
+    // The TV keeps the app alive behind Exit/Home, so coming back is not a launch: refresh the list here too, once
+    // the channel below is back (on a 2016 TV, downloading and sorting the list while it tuned slowed both).
+    setTimeout(() => {
+      if (document.hidden || !channels || !channels.length || getSettings().autoRefreshPlaylist === false) return;
       refreshChannelsInBackground().then((ok) => {
         if (ok === false) showStaleCacheNotice();
       });
-    }
+    }, RETURN_REFRESH_MS);
     setTimeout(() => {
       if (seq >= 0 && tuneSeq === seq && ui.getCurrentChannel()) player.reloadChannel();
     }, 500);
@@ -1182,7 +1184,22 @@ function hideProgress() {
 
 let lastBackTime = 0;
 
-async function refreshChannelsInBackground() {
+const RETURN_REFRESH_MS = 10000; // back in the app: the list is refreshed this long after the channel is asked again
+
+// One download at a time: a second call while one is running (two returns to the app in a row) waits for it.
+let backgroundRefresh = null;
+
+function refreshChannelsInBackground() {
+  if (!backgroundRefresh) {
+    backgroundRefresh = downloadChannelsInBackground().then((ok) => {
+      backgroundRefresh = null;
+      return ok;
+    });
+  }
+  return backgroundRefresh;
+}
+
+async function downloadChannelsInBackground() {
   const active = getActivePlaylist();
   if (!active || !active.url) return true;
   try {
