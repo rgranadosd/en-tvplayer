@@ -29,6 +29,10 @@ let stallTimer = null;
 let freezeTimer = null;
 let userPaused = false;
 let readyReport = null; // the zapping line for the diagnostics, sent once per play()
+// Each play() is a session; stop() ends it. A 2016 TV still delivers the closed channel's events after the next one is
+// opened ("playing" 60 ms in, from the old stream): the new channel looked up, with no picture and no retry. Every
+// AVPlay callback checks it is still the current session.
+let session = 0;
 
 export function lastFailure() {
   return failure;
@@ -62,6 +66,16 @@ function resolveReady(ok) {
   if (report) report(ok ? 'ok' : failure || 'fail');
   readyReport = !ok && failure === 'timeout' ? report : null; // a slow start: its frame is reported when it comes
   if (cb) cb(ok);
+}
+
+// The video AVPlay is showing, for the diagnostics: its stream info (size, codec…), as the TV reports it.
+function pictureInfo(avplay) {
+  try {
+    const video = (avplay.getCurrentStreamInfo() || []).filter((s) => s && s.type === 'VIDEO')[0];
+    return video ? String(video.extra_info).slice(0, 300) : 'no video info';
+  } catch (e) {
+    return 'unavailable: ' + (e && e.message);
+  }
 }
 
 // The server and the file type of a stream, for the diagnostics: its path can carry the login (Xtream).
@@ -100,6 +114,8 @@ export function play(url, { userAgent, referer, timeoutMs = 30000 } = {}) {
     // next call hangs the app): the last of them in the log says which call a 2016 TV got stuck in.
     const tStop = Date.now();
     stop();
+    const mySession = ++session;
+    const live = () => mySession === session;
     const obj = el();
     if (!obj) {
       resolve(false);
@@ -131,9 +147,11 @@ export function play(url, { userAgent, referer, timeoutMs = 30000 } = {}) {
       } catch {}
       avplay.setListener({
         onbufferingstart: () => {
+          if (!live()) return;
           if (bufferingCallback) bufferingCallback(true);
         },
         onbufferingprogress: (percent) => {
+          if (!live()) return;
           progressAt = Date.now();
           if (percent >= lastPct + 25) {
             lastPct = percent;
@@ -142,15 +160,18 @@ export function play(url, { userAgent, referer, timeoutMs = 30000 } = {}) {
           if (bufferingCallback) bufferingCallback(true, percent);
         },
         onbufferingcomplete: () => {
+          if (!live()) return;
           // Before the first frame, the full buffer is still ~1 s of black screen: the loading sign stays.
           if (firstFrameSeen && bufferingCallback) bufferingCallback(false);
         },
         oncurrentplaytime: () => {
+          if (!live()) return;
           playedAt = Date.now();
           if (!firstFrameSeen) {
             firstFrameSeen = true;
             clearInterval(stallTimer);
             at('frame');
+            setTimeout(() => diag('avplay: picture ' + pictureInfo(avplay) + ', display ' + displayMode), 0);
             if (!readyResolve && readyReport) {
               readyReport('late frame');
               readyReport = null;
@@ -160,14 +181,16 @@ export function play(url, { userAgent, referer, timeoutMs = 30000 } = {}) {
           }
         },
         onerror: (type) => {
+          if (!live()) return;
           at('error ' + type);
           failure = 'error';
           if (errorCallback) errorCallback(type);
           resolveReady(false);
         },
         onstreamcompleted: () => {
-          // Before the first frame: the server ended the stream without a picture (a 2016 TV reports a refused or
-          // empty stream this way, ~60 ms after open). A failure the caller retries, not a channel that started.
+          if (!live()) return;
+          // Before the first frame: the server ended the stream without a picture. A failure the caller retries, not a
+          // channel that started.
           if (!firstFrameSeen) {
             at('ended');
             failure = 'ended';
@@ -184,12 +207,16 @@ export function play(url, { userAgent, referer, timeoutMs = 30000 } = {}) {
       diag('avplay: opened in ' + (Date.now() - tOpen) + ' ms');
       avplay.setDisplayRect(0, 0, 1920, 1080);
       // Each channel keeps its own shape: by default AVPlay stretches every picture to the full rect, so 4:3 channels
-      // came out squashed. AUTO_ASPECT_RATIO also follows anamorphic SD; TVs without it get LETTER_BOX.
+      // came out squashed. AUTO_ASPECT_RATIO also follows anamorphic SD; TVs without it get LETTER_BOX. Which one the
+      // TV took goes to the diag log with the first frame.
+      let displayMode = 'default';
       try {
         avplay.setDisplayMethod('PLAYER_DISPLAY_MODE_AUTO_ASPECT_RATIO');
+        displayMode = 'auto aspect ratio';
       } catch {
         try {
           avplay.setDisplayMethod('PLAYER_DISPLAY_MODE_LETTER_BOX');
+          displayMode = 'letter box';
         } catch {}
       }
       // Start once 3 s are buffered (the default waits for far more on older TVs): faster zapping on live TS.
@@ -197,11 +224,13 @@ export function play(url, { userAgent, referer, timeoutMs = 30000 } = {}) {
         avplay.setBufferingParam('PLAYER_BUFFER_FOR_PLAY', 'PLAYER_BUFFER_SIZE_IN_SECOND', 3);
       } catch {}
       const fail = () => {
+        if (!live()) return;
         failure = 'error';
         resolveReady(false);
       };
       diag('avplay: preparing');
       avplay.prepareAsync(() => {
+        if (!live()) return;
         at('prepared');
         try {
           avplay.play();
@@ -268,6 +297,7 @@ export function resume() {
 }
 
 export function stop() {
+  session++;
   clearReadyTimer();
   clearInterval(stallTimer);
   clearInterval(freezeTimer);
