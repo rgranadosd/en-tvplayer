@@ -61,6 +61,7 @@ function retryOrFail(channel, myToken, why) {
   diag('avplay failed (' + why + ') retries=' + retries + ' ' + channel.name);
   if (retries < RETRIES) {
     retries++;
+    showLoading(true); // the spinner stays through the wait: a black screen with nothing on it looked like a hang
     retryTimer = setTimeout(() => {
       if (myToken === loadToken) loadChannel(channel);
     }, RETRY_DELAY_MS);

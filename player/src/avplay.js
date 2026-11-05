@@ -166,6 +166,14 @@ export function play(url, { userAgent, referer, timeoutMs = 30000 } = {}) {
           resolveReady(false);
         },
         onstreamcompleted: () => {
+          // Before the first frame: the server ended the stream without a picture (a 2016 TV reports a refused or
+          // empty stream this way, ~60 ms after open). A failure the caller retries, not a channel that started.
+          if (!firstFrameSeen) {
+            at('ended');
+            failure = 'ended';
+            resolveReady(false);
+            return;
+          }
           resolveReady(true);
         },
       });
