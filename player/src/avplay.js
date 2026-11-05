@@ -2,7 +2,9 @@ import { diag } from './diag.js';
 import { bufferStalled, displayModeFor } from './logic.js';
 import { getSettings } from './config.js';
 
-const STALL_MS = 8000; // a buffer that stops moving this long before the first frame: retried at once
+// A buffer that stops moving this long before the first frame: retried at once. 20 s, not 8: the 2016 TV's AVPlay can
+// stop reporting progress (stuck at 74 %) while the stream keeps arriving, and 8 s cut channels that were starting.
+const STALL_MS = 20000;
 const FREEZE_MS = 10000; // playing, but the picture hasn't moved this long: reconnected (what leaving and coming back did)
 // Native playback via Samsung AVPlay (webapis.avplay).
 // Fallback for (a) streams the browser decoder cannot render (e.g. interlaced
