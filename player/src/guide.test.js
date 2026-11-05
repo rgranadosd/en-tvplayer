@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { guideAddress, parseXmltvTime, guideWindow, guideFor, nowNext, guideByName } from './guide.js';
+import {
+  guideAddress,
+  guideJsonAddress,
+  guideFromJson,
+  parseXmltvTime,
+  guideWindow,
+  guideFor,
+  nowNext,
+  guideByName,
+} from './guide.js';
 import { shareContent } from './logic.js';
 
 const H = 3600000;
@@ -96,5 +105,43 @@ describe('guideByName', () => {
     ];
     expect(guideByName(channels, window)).toEqual({ 'Champions 2': window.cl1 });
     expect(guideByName(undefined, window)).toEqual({});
+  });
+});
+
+describe('guideJsonAddress', () => {
+  it("reads x-raflix-epg from the first line, '' without it", () => {
+    expect(
+      guideJsonAddress(
+        '#EXTM3U url-tvg="http://h/x.xml?t=1" x-raflix-epg="http://h/w.json?t=1"\n#EXTINF:-1,A\nhttp://a',
+      ),
+    ).toBe('http://h/w.json?t=1');
+    expect(guideJsonAddress('#EXTM3U url-tvg="http://h/x.xml"\n#EXTINF:-1 x-raflix-epg="no",A\n')).toBe('');
+    expect(guideJsonAddress(null)).toBe('');
+  });
+});
+
+describe('guideFromJson', () => {
+  const S = T0 / 1000; // the endpoint's times are Unix seconds
+  it('turns [start, stop, title] in seconds into the window of programmes, by start', () => {
+    const data = {
+      f1: [
+        [S + 3600, S + 7200, 'Later'],
+        [S - 600, S + 3600, 'Now'],
+        [S - 7200, S - 3600, 'Gone'],
+      ],
+      la1: [[S + 20 * 3600, S + 21 * 3600, 'Tomorrow']],
+    };
+    expect(guideFromJson(data, T0, T0 + 12 * H)).toEqual({
+      f1: [
+        { s: T0 - 600000, e: T0 + H, t: 'Now' },
+        { s: T0 + H, e: T0 + 2 * H, t: 'Later' },
+      ],
+    });
+  });
+  it('skips what is not a programme, and anything that is not an object', () => {
+    const data = { f1: [[S, S + 60, 'Ok'], [S, 'x', 'Bad'], 'oops', [S, S + 60]], la1: 'oops' };
+    expect(guideFromJson(data, T0 - H, T0 + H)).toEqual({ f1: [{ s: T0, e: T0 + 60000, t: 'Ok' }] });
+    expect(guideFromJson(null, T0, T0 + H)).toEqual({});
+    expect(guideFromJson([], T0, T0 + H)).toEqual({});
   });
 });

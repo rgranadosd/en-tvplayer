@@ -10,6 +10,35 @@ export function guideAddress(m3uText) {
   return m ? m[1].split(',')[0].trim() : '';
 }
 
+// The light guide's address in a playlist's first line (x-raflix-epg="…": the server's window.json, ~50 KB instead of
+// the whole XMLTV); '' if none.
+export function guideJsonAddress(m3uText) {
+  const first = String(m3uText || '')
+    .slice(0, 4000)
+    .split('\n')[0];
+  const m = /\bx-raflix-epg="([^"]+)"/.exec(first);
+  return m ? m[1].trim() : '';
+}
+
+// The light guide ({tvg-id: [[start, stop, title]]}, Unix seconds) as guideWindow's {id: [{s, e, t}]} (epoch ms): the
+// programmes that overlap from..until, by start; what isn't a programme is skipped.
+export function guideFromJson(data, from, until) {
+  const out = {};
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return out;
+  Object.keys(data).forEach((id) => {
+    if (!Array.isArray(data[id])) return;
+    const list = data[id]
+      .filter(
+        (p) => Array.isArray(p) && typeof p[0] === 'number' && typeof p[1] === 'number' && typeof p[2] === 'string',
+      )
+      .map((p) => ({ s: p[0] * 1000, e: p[1] * 1000, t: p[2] }))
+      .filter((p) => p.e > from && p.s < until)
+      .sort((a, b) => a.s - b.s);
+    if (list.length) out[id] = list;
+  });
+  return out;
+}
+
 // "20261025091000 +0200" → epoch ms (no offset: UTC); NaN when it isn't one.
 export function parseXmltvTime(s) {
   const m = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\s*(?:([+-])(\d{2}):?(\d{2}))?/.exec(s || '');
