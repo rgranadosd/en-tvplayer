@@ -1375,8 +1375,16 @@ async function loadViaAvplay(channel, myToken) {
     logEvent('WARN', 'Picture frozen: ' + (channel.name || channel.url.slice(0, 60)));
     if (frozenCallback) frozenCallback();
   });
+  let up = false; // the first frame came: an error now is a cut, not a channel AVPlay can't play
   avplay.onError((type) => {
     if (myToken !== loadToken) return;
+    // A cut mid-play (the source stopped): reconnected quietly like a frozen picture. Marking the channel failed sent
+    // every later load of it, the reconnect too, to Shaka, which plays raw TS with jumps on the 2018 TVs.
+    if (up && frozenCallback) {
+      logEvent('WARN', 'Native playback cut (' + type + '): ' + (channel.name || channel.url.slice(0, 60)));
+      frozenCallback();
+      return;
+    }
     avplayFailedUrls.add(channel.url);
     avplayPreferredUrls.delete(channel.url);
     logEvent('ERROR', 'Native playback failed (' + type + '): ' + (channel.name || channel.url.slice(0, 60)));
@@ -1402,6 +1410,7 @@ async function loadViaAvplay(channel, myToken) {
     return false;
   }
   useAvplay = true;
+  up = true;
   if (engineCallback) engineCallback('AVPlay');
   hideError();
   reconnectAttempts = 0;
