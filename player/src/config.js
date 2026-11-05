@@ -19,6 +19,9 @@ const settingsDefaults = {
   autoQuality: true,
   autoRefreshPlaylist: true,
   reconnectFrozen: true, // a picture that freezes (AVPlay) reconnects by itself, quietly (Tizen 4+ package)
+  // Every picture stretched to 16:9 (avplay.js). On by default on the 2016-2017 package: its AVPlay shows widescreen
+  // SD (720×576 flagged 16:9) narrow with bars; the 2018 TVs read the flag and keep each channel's own shape.
+  pictureFill: import.meta.env.MODE === 'legacy',
   channelSort: 'provider',
   updateCheck: false,
   showWatermark: true,

@@ -3,6 +3,7 @@ import { fetchPlaylistEntry, escapeHtml } from './utils.js';
 import { login as xtreamLogin } from './xtream.js';
 import { setConsented } from './update.js';
 import * as player from './player.js';
+import { applyPictureFormat } from './avplay.js';
 import * as ui from './ui.js';
 
 // The 2016-2017 package (player-legacy.js) never reconnects a frozen picture: no setting there.
@@ -566,6 +567,7 @@ function buildFocusOrder() {
     focusOrder.push(document.getElementById('toggle-autoq'));
     focusOrder.push(document.getElementById('toggle-auto-refresh'));
     if (RECONNECT_SETTING) focusOrder.push(document.getElementById('toggle-reconnect-frozen'));
+    focusOrder.push(document.getElementById('toggle-picture-fill'));
     focusOrder.push(document.getElementById('toggle-update-check'));
     focusOrder.push(document.getElementById('toggle-watermark'));
     focusOrder.push(document.getElementById('toggle-badge'));
@@ -790,6 +792,9 @@ function render() {
           saveSettings({ autoRefreshPlaylist: enabled });
         } else if (this.id === 'toggle-reconnect-frozen') {
           saveSettings({ reconnectFrozen: this.classList.contains('on') });
+        } else if (this.id === 'toggle-picture-fill') {
+          saveSettings({ pictureFill: this.classList.contains('on') });
+          applyPictureFormat();
         } else if (this.id === 'toggle-update-check') {
           const enabled = this.classList.contains('on');
           setConsented(enabled);
@@ -982,6 +987,7 @@ function renderPlaybackCard() {
   const autoQ = s.autoQuality !== false;
   const autoRefresh = s.autoRefreshPlaylist !== false;
   const reconnectFrozen = s.reconnectFrozen !== false;
+  const pictureFill = s.pictureFill === true;
   const updateCheck = s.updateCheck === true;
   const watermark = s.showWatermark !== false;
   const badge = s.showResolutionBadge !== false;
@@ -1012,6 +1018,12 @@ function renderPlaybackCard() {
       '" id="toggle-reconnect-frozen"><div class="knob"></div></div>';
     html += '</div>';
   }
+  html += '<div class="toggle-row">';
+  html +=
+    '<div><div class="toggle-label">Fill the screen</div><div class="toggle-desc">Stretch every channel to the full screen: widescreen channels this TV shows narrow, with black bars, fill it (old 4:3 ones come out wider)</div></div>';
+  html +=
+    '<div class="toggle' + (pictureFill ? ' on' : '') + '" id="toggle-picture-fill"><div class="knob"></div></div>';
+  html += '</div>';
   html += '<div class="toggle-row">';
   html +=
     '<div><div class="toggle-label">Check for updates</div><div class="toggle-desc">Notify when a new version is available (anonymous)</div></div>';

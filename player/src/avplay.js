@@ -1,5 +1,6 @@
 import { diag } from './diag.js';
 import { bufferStalled } from './logic.js';
+import { getSettings } from './config.js';
 
 const STALL_MS = 8000; // a buffer that stops moving this long before the first frame: retried at once
 const FREEZE_MS = 10000; // playing, but the picture hasn't moved this long: reconnected (what leaving and coming back did)
@@ -66,6 +67,29 @@ function resolveReady(ok) {
   if (report) report(ok ? 'ok' : failure || 'fail');
   readyReport = !ok && failure === 'timeout' ? report : null; // a slow start: its frame is reported when it comes
   if (cb) cb(ok);
+}
+
+// Settings > Playback > Fill the screen: every picture stretched to 16:9 (FULL_SCREEN). Off, each channel keeps its own
+// shape: by default AVPlay stretches every picture to the full rect, so 4:3 channels came out squashed;
+// AUTO_ASPECT_RATIO also follows anamorphic SD on the 2018 TVs (the 2016 one takes it but shows that SD narrow with
+// bars), and TVs without it get LETTER_BOX. Returns the mode the TV took.
+function setPictureFormat(avplay) {
+  const modes = getSettings().pictureFill ? ['FULL_SCREEN'] : ['AUTO_ASPECT_RATIO', 'LETTER_BOX'];
+  for (const mode of modes) {
+    try {
+      avplay.setDisplayMethod('PLAYER_DISPLAY_MODE_' + mode);
+      return mode.toLowerCase();
+    } catch {}
+  }
+  return 'default';
+}
+
+// The setting changed: the channel on screen follows at once.
+export function applyPictureFormat() {
+  if (!active || !isAvailable()) return;
+  try {
+    setPictureFormat(window.webapis.avplay);
+  } catch {}
 }
 
 // The video AVPlay is showing, for the diagnostics: its stream info (size, codec…), as the TV reports it.
@@ -206,19 +230,7 @@ export function play(url, { userAgent, referer, timeoutMs = 30000 } = {}) {
       active = true;
       diag('avplay: opened in ' + (Date.now() - tOpen) + ' ms');
       avplay.setDisplayRect(0, 0, 1920, 1080);
-      // Each channel keeps its own shape: by default AVPlay stretches every picture to the full rect, so 4:3 channels
-      // came out squashed. AUTO_ASPECT_RATIO also follows anamorphic SD; TVs without it get LETTER_BOX. Which one the
-      // TV took goes to the diag log with the first frame.
-      let displayMode = 'default';
-      try {
-        avplay.setDisplayMethod('PLAYER_DISPLAY_MODE_AUTO_ASPECT_RATIO');
-        displayMode = 'auto aspect ratio';
-      } catch {
-        try {
-          avplay.setDisplayMethod('PLAYER_DISPLAY_MODE_LETTER_BOX');
-          displayMode = 'letter box';
-        } catch {}
-      }
+      const displayMode = setPictureFormat(avplay); // which one the TV took goes to the diag log with the first frame
       // Start once 3 s are buffered (the default waits for far more on older TVs): faster zapping on live TS.
       try {
         avplay.setBufferingParam('PLAYER_BUFFER_FOR_PLAY', 'PLAYER_BUFFER_SIZE_IN_SECOND', 3);
