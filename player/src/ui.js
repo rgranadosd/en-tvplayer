@@ -505,7 +505,9 @@ export function renderChannelList(keepScroll) {
       '<span class="channel-name"><span class="channel-name-text">' +
       escapeHtml(channel.name) +
       '</span>' +
-      (onNow ? '<span class="channel-now">' + escapeHtml(onNow.t) + '</span>' : '') +
+      (onNow
+        ? '<span class="channel-now"><span class="channel-now-text">' + escapeHtml(onNow.t) + '</span></span>'
+        : '') +
       '</span>' +
       (isFavorite(channel) ? '<span class="channel-fav">&#9829;</span>' : '');
 
@@ -1341,17 +1343,16 @@ function updateActiveChannel() {
   });
 }
 
-let marqueeAnimation = null;
-let marqueeNameEl = null;
+// The focused row's name and programme on now, each scrolling when it doesn't fit: [{el, animation}].
+let marquees = [];
 
 function startMarquee(textEl) {
-  stopMarquee();
-  const overflow = textEl.scrollWidth - textEl.parentElement.clientWidth;
+  const box = textEl.parentElement;
+  const overflow = box.scrollWidth - box.clientWidth;
   if (overflow <= 0) return;
   const offset = overflow + 20;
-  marqueeNameEl = textEl;
   textEl.classList.add('marquee');
-  marqueeAnimation = textEl.animate(
+  const animation = textEl.animate(
     [
       { transform: 'translateX(0)' },
       { transform: 'translateX(0)', offset: 0.15 },
@@ -1361,21 +1362,20 @@ function startMarquee(textEl) {
       { transform: 'translateX(0)' },
     ],
     {
-      duration: 4000,
+      // Long programme titles: slower, so the text moves at a readable pace (short ones keep the 4 s of the names).
+      duration: Math.max(4000, offset * 30),
       iterations: Infinity,
     },
   );
+  marquees.push({ el: textEl, animation });
 }
 
 function stopMarquee() {
-  if (marqueeAnimation) {
-    marqueeAnimation.cancel();
-    marqueeAnimation = null;
-  }
-  if (marqueeNameEl) {
-    marqueeNameEl.classList.remove('marquee');
-    marqueeNameEl = null;
-  }
+  marquees.forEach(({ el, animation }) => {
+    animation.cancel();
+    el.classList.remove('marquee');
+  });
+  marquees = [];
 }
 
 function updateFocus() {
@@ -1386,9 +1386,9 @@ function updateFocus() {
     const nowFocused = idx === focusedIndex;
     item.classList.toggle('focused', nowFocused);
     if (nowFocused) {
-      const textEl = item.querySelector('.channel-name-text');
-      if (textEl) {
-        requestAnimationFrame(() => startMarquee(textEl));
+      const texts = item.querySelectorAll('.channel-name-text, .channel-now-text');
+      if (texts.length) {
+        requestAnimationFrame(() => texts.forEach(startMarquee));
       }
     }
   });

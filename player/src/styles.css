@@ -262,6 +262,15 @@ body {
   color: #ccc;
 }
 
+/* The focused row's programme scrolls when it doesn't fit (ui.js startMarquee): a box that can move, no "…" */
+.channel-item.focused .channel-now {
+  text-overflow: clip;
+}
+
+.channel-item.focused .channel-now-text {
+  display: inline-block;
+}
+
 .channel-fav {
   margin-left: calc(8px * var(--tv-scale));
   font-size: calc(20px * var(--tv-scale));
