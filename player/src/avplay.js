@@ -1,5 +1,5 @@
 import { diag } from './diag.js';
-import { bufferStalled } from './logic.js';
+import { bufferStalled, displayModeFor } from './logic.js';
 import { getSettings } from './config.js';
 
 const STALL_MS = 8000; // a buffer that stops moving this long before the first frame: retried at once
@@ -34,6 +34,10 @@ let readyReport = null; // the zapping line for the diagnostics, sent once per p
 // opened ("playing" 60 ms in, from the old stream): the new channel looked up, with no picture and no retry. Every
 // AVPlay callback checks it is still the current session.
 let session = 0;
+// The video on screen, from the stream info after its first frame (0 until then): Picture format's rule needs it.
+let picture = { width: 0, height: 0 };
+let displayMode = '';
+const READS_ASPECT = import.meta.env.MODE !== 'legacy'; // the 2018 TVs' AVPlay follows a stream's 16:9 flag
 
 export function lastFailure() {
   return failure;
@@ -69,36 +73,44 @@ function resolveReady(ok) {
   if (cb) cb(ok);
 }
 
-// Settings > Playback > Fill the screen: every picture stretched to 16:9 (FULL_SCREEN). Off, each channel keeps its own
-// shape: by default AVPlay stretches every picture to the full rect, so 4:3 channels came out squashed;
-// AUTO_ASPECT_RATIO also follows anamorphic SD on the 2018 TVs (the 2016 one takes it but shows that SD narrow with
-// bars), and TVs without it get LETTER_BOX. Returns the mode the TV took.
-function setPictureFormat(avplay) {
-  const modes = getSettings().pictureFill ? ['FULL_SCREEN'] : ['AUTO_ASPECT_RATIO', 'LETTER_BOX'];
-  for (const mode of modes) {
+// Settings > Playback > Picture format (logic.js displayModeFor), for the picture on screen. By default AVPlay stretches
+// every picture to the full rect (4:3 channels came out squashed): AUTO_ASPECT_RATIO keeps each one's shape, and TVs
+// without it get LETTER_BOX. Only calls AVPlay when the mode changes; displayMode is the one the TV took.
+function setDisplay(avplay) {
+  const mode = displayModeFor(getSettings().pictureFormat, picture.width, picture.height, READS_ASPECT);
+  const tries = mode === 'AUTO_ASPECT_RATIO' ? ['AUTO_ASPECT_RATIO', 'LETTER_BOX'] : [mode];
+  if (tries.some((t) => t.toLowerCase() === displayMode)) return;
+  for (const t of tries) {
     try {
-      avplay.setDisplayMethod('PLAYER_DISPLAY_MODE_' + mode);
-      return mode.toLowerCase();
+      avplay.setDisplayMethod('PLAYER_DISPLAY_MODE_' + t);
+      displayMode = t.toLowerCase();
+      return;
     } catch {}
   }
-  return 'default';
 }
 
 // The setting changed: the channel on screen follows at once.
 export function applyPictureFormat() {
   if (!active || !isAvailable()) return;
   try {
-    setPictureFormat(window.webapis.avplay);
+    setDisplay(window.webapis.avplay);
+    diag('avplay: picture format ' + getSettings().pictureFormat + ', display ' + displayMode);
   } catch {}
 }
 
-// The video AVPlay is showing, for the diagnostics: its stream info (size, codec…), as the TV reports it.
-function pictureInfo(avplay) {
+// The video AVPlay is showing: its size and, for the diagnostics, its stream info as the TV reports it (codec…).
+function videoInfo(avplay) {
   try {
     const video = (avplay.getCurrentStreamInfo() || []).filter((s) => s && s.type === 'VIDEO')[0];
-    return video ? String(video.extra_info).slice(0, 300) : 'no video info';
+    if (!video) return { width: 0, height: 0, raw: 'no video info' };
+    const raw = String(video.extra_info);
+    let extra = {};
+    try {
+      extra = JSON.parse(raw);
+    } catch {}
+    return { width: parseInt(extra.Width, 10) || 0, height: parseInt(extra.Height, 10) || 0, raw: raw.slice(0, 300) };
   } catch (e) {
-    return 'unavailable: ' + (e && e.message);
+    return { width: 0, height: 0, raw: 'unavailable: ' + (e && e.message) };
   }
 }
 
@@ -195,7 +207,16 @@ export function play(url, { userAgent, referer, timeoutMs = 30000 } = {}) {
             firstFrameSeen = true;
             clearInterval(stallTimer);
             at('frame');
-            setTimeout(() => diag('avplay: picture ' + pictureInfo(avplay) + ', display ' + displayMode), 0);
+            // Out of the callback: the stream info (its size) decides the display mode, and goes to the diag log.
+            setTimeout(() => {
+              if (!live()) return;
+              const info = videoInfo(avplay);
+              picture = { width: info.width, height: info.height };
+              const first = displayMode;
+              setDisplay(avplay);
+              const change = displayMode !== first ? ' → ' + displayMode : '';
+              diag('avplay: picture ' + info.raw + ', display ' + first + change);
+            }, 0);
             if (!readyResolve && readyReport) {
               readyReport('late frame');
               readyReport = null;
@@ -230,7 +251,9 @@ export function play(url, { userAgent, referer, timeoutMs = 30000 } = {}) {
       active = true;
       diag('avplay: opened in ' + (Date.now() - tOpen) + ' ms');
       avplay.setDisplayRect(0, 0, 1920, 1080);
-      const displayMode = setPictureFormat(avplay); // which one the TV took goes to the diag log with the first frame
+      picture = { width: 0, height: 0 };
+      displayMode = '';
+      setDisplay(avplay); // until the first frame says the picture's size
       // Start once 3 s are buffered (the default waits for far more on older TVs): faster zapping on live TS.
       try {
         avplay.setBufferingParam('PLAYER_BUFFER_FOR_PLAY', 'PLAYER_BUFFER_SIZE_IN_SECOND', 3);

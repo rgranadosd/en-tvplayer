@@ -4,10 +4,21 @@ import { login as xtreamLogin } from './xtream.js';
 import { setConsented } from './update.js';
 import * as player from './player.js';
 import { applyPictureFormat } from './avplay.js';
+import { PICTURE_FORMATS } from './logic.js';
 import * as ui from './ui.js';
 
 // The 2016-2017 package (player-legacy.js) never reconnects a frozen picture: no setting there.
 const RECONNECT_SETTING = import.meta.env.MODE !== 'legacy';
+
+// Settings > Playback > Picture format: what each one is called, and what it does.
+const PICTURE_FORMAT_TEXT = {
+  auto: {
+    label: 'Automatic',
+    desc: 'Each channel in its right shape: widescreen channels in standard quality fill the screen',
+  },
+  original: { label: 'Original', desc: 'Each channel in the shape it says it has, black bars included' },
+  full: { label: 'Full screen', desc: 'Every channel stretched to the full screen, even if it looks wider or taller' },
+};
 
 let container = null;
 let onPlaylistFetched = null;
@@ -219,7 +230,7 @@ export function selectFocused() {
     return;
   }
 
-  if (el.classList.contains('toggle')) {
+  if (el.classList.contains('toggle') || el.id === 'pick-picture-format') {
     // Trigger the click handler registered in render() — it saves the setting
     // and applies it to the player. (classList.toggle alone never persisted.)
     el.click();
@@ -567,7 +578,7 @@ function buildFocusOrder() {
     focusOrder.push(document.getElementById('toggle-autoq'));
     focusOrder.push(document.getElementById('toggle-auto-refresh'));
     if (RECONNECT_SETTING) focusOrder.push(document.getElementById('toggle-reconnect-frozen'));
-    focusOrder.push(document.getElementById('toggle-picture-fill'));
+    focusOrder.push(document.getElementById('pick-picture-format'));
     focusOrder.push(document.getElementById('toggle-update-check'));
     focusOrder.push(document.getElementById('toggle-watermark'));
     focusOrder.push(document.getElementById('toggle-badge'));
@@ -791,9 +802,6 @@ function render() {
           saveSettings({ autoRefreshPlaylist: enabled });
         } else if (this.id === 'toggle-reconnect-frozen') {
           saveSettings({ reconnectFrozen: this.classList.contains('on') });
-        } else if (this.id === 'toggle-picture-fill') {
-          saveSettings({ pictureFill: this.classList.contains('on') });
-          applyPictureFormat();
         } else if (this.id === 'toggle-update-check') {
           const enabled = this.classList.contains('on');
           setConsented(enabled);
@@ -814,6 +822,18 @@ function render() {
         }
       });
     });
+    const format = document.getElementById('pick-picture-format');
+    if (format) {
+      format.addEventListener('click', () => {
+        const now = PICTURE_FORMATS.indexOf(getSettings().pictureFormat);
+        const next = PICTURE_FORMATS[(now + 1) % PICTURE_FORMATS.length];
+        saveSettings({ pictureFormat: next });
+        format.textContent = '‹ ' + PICTURE_FORMAT_TEXT[next].label + ' ›';
+        const desc = document.getElementById('picture-format-desc');
+        if (desc) desc.textContent = PICTURE_FORMAT_TEXT[next].desc;
+        applyPictureFormat();
+      });
+    }
   }
 
   if (typeof onRender === 'function') onRender();
@@ -986,7 +1006,7 @@ function renderPlaybackCard() {
   const autoQ = s.autoQuality !== false;
   const autoRefresh = s.autoRefreshPlaylist !== false;
   const reconnectFrozen = s.reconnectFrozen !== false;
-  const pictureFill = s.pictureFill === true;
+  const pictureFormat = PICTURE_FORMATS.indexOf(s.pictureFormat) >= 0 ? s.pictureFormat : 'auto';
   const updateCheck = s.updateCheck === true;
   const watermark = s.showWatermark !== false;
   const badge = s.showResolutionBadge !== false;
@@ -1019,9 +1039,13 @@ function renderPlaybackCard() {
   }
   html += '<div class="toggle-row">';
   html +=
-    '<div><div class="toggle-label">Fill the screen</div><div class="toggle-desc">Stretch every channel to the full screen: widescreen channels this TV shows narrow, with black bars, fill it (old 4:3 ones come out wider)</div></div>';
+    '<div><div class="toggle-label">Picture format</div><div class="toggle-desc" id="picture-format-desc">' +
+    PICTURE_FORMAT_TEXT[pictureFormat].desc +
+    '</div></div>';
   html +=
-    '<div class="toggle' + (pictureFill ? ' on' : '') + '" id="toggle-picture-fill"><div class="knob"></div></div>';
+    '<button class="select-opt" id="pick-picture-format" type="button">‹ ' +
+    PICTURE_FORMAT_TEXT[pictureFormat].label +
+    ' ›</button>';
   html += '</div>';
   html += '<div class="toggle-row">';
   html +=
