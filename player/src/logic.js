@@ -245,12 +245,12 @@ export function nearestScrollTop(scrollTop, viewHeight, top, height) {
 export const PICTURE_FORMATS = ['auto', 'original', 'full'];
 
 // The AVPlay display mode for a picture (width × height, 0 until its first frame). 'auto' (also when nothing is saved)
-// keeps each channel's shape, except widescreen SD (720×576 or 720×480, flagged 16:9) on a TV that can't read the flag:
-// the 2016 AVPlay shows it narrow with bars, so it is stretched; 'original' always keeps the shape; 'full' always
-// stretches.
-export function displayModeFor(format, width, height, readsAspect) {
+// keeps each channel's shape, except widescreen SD (720×576 or 720×480, flagged 16:9), which is stretched: AVPlay can
+// miss the flag and show it narrow with bars (always on the 2016 TV; on the 2018 ones, with MPEG-2 channels);
+// 'original' always keeps the shape; 'full' always stretches.
+export function displayModeFor(format, width, height) {
   if (format === 'full') return 'FULL_SCREEN';
-  if (format === 'original' || readsAspect) return 'AUTO_ASPECT_RATIO';
+  if (format === 'original') return 'AUTO_ASPECT_RATIO';
   const sd = width > 0 && width <= 720 && (height === 576 || height === 480);
   return sd ? 'FULL_SCREEN' : 'AUTO_ASPECT_RATIO';
 }

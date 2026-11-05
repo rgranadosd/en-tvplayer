@@ -2,9 +2,9 @@ import { diag } from './diag.js';
 import { bufferStalled, displayModeFor } from './logic.js';
 import { getSettings } from './config.js';
 
-// A buffer that stops moving this long before the first frame: retried at once. 20 s, not 8: the 2016 TV's AVPlay can
-// stop reporting progress (stuck at 74 %) while the stream keeps arriving, and 8 s cut channels that were starting.
-const STALL_MS = 20000;
+// A buffer that stops moving this long before the first frame: retried at once. The 2016 TV's AVPlay can get stuck
+// (74 %) while the stream keeps arriving: waiting 20 s didn't unstick it, opening it again did.
+const STALL_MS = 8000;
 const FREEZE_MS = 10000; // playing, but the picture hasn't moved this long: reconnected (what leaving and coming back did)
 // Native playback via Samsung AVPlay (webapis.avplay).
 // Fallback for (a) streams the browser decoder cannot render (e.g. interlaced
@@ -39,7 +39,6 @@ let session = 0;
 // The video on screen, from the stream info after its first frame (0 until then): Picture format's rule needs it.
 let picture = { width: 0, height: 0 };
 let displayMode = '';
-const READS_ASPECT = import.meta.env.MODE !== 'legacy'; // the 2018 TVs' AVPlay follows a stream's 16:9 flag
 
 export function lastFailure() {
   return failure;
@@ -79,7 +78,7 @@ function resolveReady(ok) {
 // every picture to the full rect (4:3 channels came out squashed): AUTO_ASPECT_RATIO keeps each one's shape, and TVs
 // without it get LETTER_BOX. Only calls AVPlay when the mode changes; displayMode is the one the TV took.
 function setDisplay(avplay) {
-  const mode = displayModeFor(getSettings().pictureFormat, picture.width, picture.height, READS_ASPECT);
+  const mode = displayModeFor(getSettings().pictureFormat, picture.width, picture.height);
   const tries = mode === 'AUTO_ASPECT_RATIO' ? ['AUTO_ASPECT_RATIO', 'LETTER_BOX'] : [mode];
   if (tries.some((t) => t.toLowerCase() === displayMode)) return;
   for (const t of tries) {

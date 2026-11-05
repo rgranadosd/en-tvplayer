@@ -322,18 +322,18 @@ describe('nearestScrollTop', () => {
 });
 
 describe('displayModeFor', () => {
-  it('auto: widescreen SD is stretched where the TV cannot read its 16:9 flag, the rest keeps its shape', () => {
-    expect(displayModeFor('auto', 720, 576, false)).toBe('FULL_SCREEN');
-    expect(displayModeFor('auto', 720, 480, false)).toBe('FULL_SCREEN');
-    expect(displayModeFor('auto', 544, 576, false)).toBe('FULL_SCREEN');
-    expect(displayModeFor('auto', 1920, 800, false)).toBe('AUTO_ASPECT_RATIO');
-    expect(displayModeFor('auto', 1920, 1080, false)).toBe('AUTO_ASPECT_RATIO');
-    expect(displayModeFor('auto', 0, 0, false)).toBe('AUTO_ASPECT_RATIO'); // not known yet
-    expect(displayModeFor('auto', 720, 576, true)).toBe('AUTO_ASPECT_RATIO'); // the 2018 TVs read the flag
-    expect(displayModeFor(undefined, 720, 576, false)).toBe('FULL_SCREEN'); // no setting saved yet: auto
+  it('auto: widescreen SD is stretched, the rest keeps its shape', () => {
+    expect(displayModeFor('auto', 720, 576)).toBe('FULL_SCREEN');
+    expect(displayModeFor('auto', 720, 480)).toBe('FULL_SCREEN');
+    expect(displayModeFor('auto', 544, 576)).toBe('FULL_SCREEN');
+    expect(displayModeFor('auto', 1920, 800)).toBe('AUTO_ASPECT_RATIO');
+    expect(displayModeFor('auto', 1920, 1080)).toBe('AUTO_ASPECT_RATIO');
+    expect(displayModeFor('auto', 720, 304)).toBe('AUTO_ASPECT_RATIO');
+    expect(displayModeFor('auto', 0, 0)).toBe('AUTO_ASPECT_RATIO'); // not known yet
+    expect(displayModeFor(undefined, 720, 576)).toBe('FULL_SCREEN'); // no setting saved yet: auto
   });
   it('original always keeps the shape, full always stretches', () => {
-    expect(displayModeFor('original', 720, 576, false)).toBe('AUTO_ASPECT_RATIO');
-    expect(displayModeFor('full', 1920, 800, true)).toBe('FULL_SCREEN');
+    expect(displayModeFor('original', 720, 576)).toBe('AUTO_ASPECT_RATIO');
+    expect(displayModeFor('full', 1920, 800)).toBe('FULL_SCREEN');
   });
 });

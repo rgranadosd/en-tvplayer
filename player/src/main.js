@@ -1100,8 +1100,8 @@ async function handleChannelSelect(channel, afterStart) {
   if (afterStart) afterStart();
   tuneInFlight = false;
   tuneSucceeded = ok === true;
+  startGuide(); // also when this first tune failed: the player's own retries may bring the channel up later
   if (ok && mySeq === tuneSeq) {
-    startGuide();
     ui.showNowNext(channel);
     watchedTimer = setTimeout(() => {
       favorites.noteWatched(channel);
