@@ -645,7 +645,6 @@ function render() {
     '<nav class="settings-nav">' +
     '<div class="nav-header">' +
     '<div class="nav-logo">' +
-    '<img class="icon" src="logo.svg" alt="RAFLIX IPTV logo">' +
     '<div class="text">RAFLIX <span>IPTV</span></div>' +
     '</div>' +
     '<div class="nav-sub">Settings</div>' +

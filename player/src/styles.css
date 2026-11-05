@@ -136,23 +136,12 @@ body {
   letter-spacing: 2px;
   line-height: 1;
 }
-.logo > * + * {
-  margin-left: 10px;
-}
-
 .logo-text {
   color: #fff;
 }
 
 .logo-text span {
   color: #ed421f;
-}
-
-.logo-icon {
-  flex-shrink: 0;
-  width: calc(48px * var(--tv-scale));
-  height: calc(48px * var(--tv-scale));
-  border-radius: calc(12px * var(--tv-scale));
 }
 
 .channel-list {
@@ -399,20 +388,22 @@ body {
 /* Brand watermark behind the video: with no stream on screen this shows
    instead of a black void (video plane hidden, veil off, errors, etc.) */
 .player-container::before {
-  content: '';
+  content: 'RAFLIX IPTV';
   position: absolute;
   top: 50%;
   left: 50%;
-  width: calc(180px * var(--tv-scale));
-  height: calc(180px * var(--tv-scale));
-  transform: translate(-50%, -50%);
-  background: url('logo.svg') center / contain no-repeat;
+  transform: translate(-50%, -160%); /* above the status line, which is centered */
+  font-size: calc(64px * var(--tv-scale));
+  font-weight: 700;
+  letter-spacing: 4px;
+  white-space: nowrap;
+  color: #fff;
   opacity: 0.12;
   pointer-events: none;
 }
 
 /* Centered status line for dead-air states (no channels, failed tune,
-   stopped) and post-tune buffering: the faint backdrop logo above is the
+   stopped) and post-tune buffering: the faint backdrop name above is the
    only logo on screen, this text names the channel or state under it. */
 .player-empty-logo {
   position: absolute;
@@ -627,11 +618,8 @@ body {
   align-items: center;
   justify-content: center;
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
-}
-.play-state-icon img {
-  width: calc(72px * var(--tv-scale));
-  height: calc(72px * var(--tv-scale));
-  border-radius: calc(14px * var(--tv-scale));
+  font-size: calc(48px * var(--tv-scale));
+  color: #fff;
 }
 
 /* Right sidebar (overlay — always absolute) */
@@ -945,12 +933,6 @@ body {
   animation: bootLogoIn 0.6s ease-out forwards;
   animation-delay: 0.2s;
 }
-/* No flex gap: unsupported on Tizen's Chromium — explicit sibling margin */
-.boot-logo > * + * {
-  margin-left: 0;
-  margin-top: calc(16px * var(--tv-scale));
-}
-
 @keyframes bootLogoIn {
   0% {
     opacity: 0;
@@ -994,11 +976,6 @@ body {
   animation: none;
   opacity: 0;
   transition: opacity 0.3s ease;
-}
-
-.boot-logo-icon {
-  flex-shrink: 0;
-  border-radius: calc(12px * var(--tv-scale));
 }
 
 .boot-logo-text {
@@ -1160,17 +1137,6 @@ body {
   align-items: center;
   margin-bottom: calc(8px * var(--tv-scale));
 }
-.nav-logo > * + * {
-  margin-left: 12px;
-}
-
-.nav-logo .icon {
-  width: calc(48px * var(--tv-scale));
-  height: calc(48px * var(--tv-scale));
-  border-radius: calc(8px * var(--tv-scale));
-  flex-shrink: 0;
-}
-
 .nav-logo .text {
   font-size: calc(28px * var(--tv-scale));
   font-weight: 590;
