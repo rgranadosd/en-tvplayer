@@ -202,19 +202,31 @@ const LAST_SEEN_KEY = 'en_last_seen_version';
 const CHANGELOG = [
   {
     version: '1.0.3',
-    sections: [
-      {
-        type: 'added',
-        items: [
-          "Programme guide: what's on now under each channel in the list",
-          'Now and next for a few seconds when a channel starts',
-        ],
-      },
-      {
-        type: 'fixed',
-        items: ['A frozen picture reconnects by itself after 10 s, quietly (Settings > Playback to turn it off)'],
-      },
-    ],
+    // The 2016-2017 package has neither the guide in the list nor the reconnect: only what changed for it.
+    sections:
+      import.meta.env.MODE === 'legacy'
+        ? [
+            {
+              type: 'changed',
+              items: [
+                'Lighter on this TV: the channel list is kept apart from the settings',
+                'Back in the app, the channel comes first and the list is updated after it',
+              ],
+            },
+          ]
+        : [
+            {
+              type: 'added',
+              items: [
+                "Programme guide: what's on now under each channel in the list",
+                'Now and next for a few seconds when a channel starts',
+              ],
+            },
+            {
+              type: 'fixed',
+              items: ['A frozen picture reconnects by itself after 10 s, quietly (Settings > Playback to turn it off)'],
+            },
+          ],
   },
   {
     version: '1.0.2',
