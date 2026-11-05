@@ -34,7 +34,7 @@ let groups = [];
 let selectedGroup = null;
 let groupFocusedIndex = 0;
 
-/* Programme guide (Tizen 4+ package): {tvg-id: [{s, e, t}]}, from main.js once it's downloaded */
+/* Programme guide: {tvg-id: [{s, e, t}]}, from main.js once it's downloaded */
 let guide = {};
 let guideNames = null; // guideByName(channels, guide), built again when either changes
 
@@ -1343,39 +1343,48 @@ function updateActiveChannel() {
   });
 }
 
-// The focused row's name and programme on now, each scrolling when it doesn't fit: [{el, animation}].
+// The focused row's name and programme on now, each scrolling when it doesn't fit. A CSS animation, not
+// element.animate (the 2016 TV's browser has no Web Animations): each element moves by its own overflow, so its
+// keyframes are written for it, -webkit- too for that browser. [{el, css}]
 let marquees = [];
+let marqueeCount = 0;
+
+function marqueeStyle() {
+  let el = document.getElementById('marquee-style');
+  if (!el) {
+    el = document.createElement('style');
+    el.id = 'marquee-style';
+    document.head.appendChild(el);
+  }
+  return el;
+}
 
 function startMarquee(textEl) {
   const box = textEl.parentElement;
   const overflow = box.scrollWidth - box.clientWidth;
   if (overflow <= 0) return;
   const offset = overflow + 20;
+  const name = 'marquee-' + ++marqueeCount;
+  const at = (x) => '{-webkit-transform:translateX(' + x + ');transform:translateX(' + x + ')}';
+  const frames = '{0%,15%' + at('0') + '45%,55%' + at('-' + offset + 'px') + '85%,100%' + at('0') + '}';
+  marquees.push({ el: textEl, css: '@-webkit-keyframes ' + name + frames + '@keyframes ' + name + frames });
+  marqueeStyle().textContent = marquees.map((m) => m.css).join('');
+  // Long programme titles: slower, so the text moves at a readable pace (short ones keep the 4 s of the names).
+  const animation = name + ' ' + Math.max(4000, offset * 30) + 'ms linear infinite';
   textEl.classList.add('marquee');
-  const animation = textEl.animate(
-    [
-      { transform: 'translateX(0)' },
-      { transform: 'translateX(0)', offset: 0.15 },
-      { transform: 'translateX(-' + offset + 'px)', offset: 0.45 },
-      { transform: 'translateX(-' + offset + 'px)', offset: 0.55 },
-      { transform: 'translateX(0)', offset: 0.85 },
-      { transform: 'translateX(0)' },
-    ],
-    {
-      // Long programme titles: slower, so the text moves at a readable pace (short ones keep the 4 s of the names).
-      duration: Math.max(4000, offset * 30),
-      iterations: Infinity,
-    },
-  );
-  marquees.push({ el: textEl, animation });
+  textEl.style.webkitAnimation = animation;
+  textEl.style.animation = animation;
 }
 
 function stopMarquee() {
-  marquees.forEach(({ el, animation }) => {
-    animation.cancel();
+  marquees.forEach(({ el }) => {
+    el.style.webkitAnimation = '';
+    el.style.animation = '';
     el.classList.remove('marquee');
   });
   marquees = [];
+  const style = document.getElementById('marquee-style');
+  if (style) style.textContent = '';
 }
 
 function updateFocus() {

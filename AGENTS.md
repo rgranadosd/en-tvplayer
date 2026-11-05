@@ -42,9 +42,9 @@ en-tvplayer/
 │   │   │                groups (logic.js FAVORITES_GROUP, RECENT_GROUP); app-control channel requests
 │   │   ├── raflix-share.js Where Raflix is installed: favorites, recent and their next 12 h of guide to
 │   │   │                Documents/raflix-iptv.json, for its Directos tab (no file without Raflix); also downloads
-│   │   │                the guide the Tizen 4+ package shows
+│   │   │                the guide the channel list shows (both packages)
 │   │   ├── guide.js     Pure XMLTV helpers: the playlist's url-tvg, programmes in a time window, by channel, now
-│   │   │                and next; the Tizen 4+ package shows them (list row: now; OSD on a channel start: now/next)
+│   │   │                and next; both packages show them (list row: now; OSD on a channel start: now/next)
 │   │   ├── logic.js     Pure DOM-free logic (testable, no side effects)
 │   │   └── *.test.js    Vitest suites, colocated per module (§10)
 │   ├── public/          Static assets

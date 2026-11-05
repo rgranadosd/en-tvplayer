@@ -202,10 +202,17 @@ const LAST_SEEN_KEY = 'en_last_seen_version';
 const CHANGELOG = [
   {
     version: '1.0.3',
-    // The 2016-2017 package has neither the guide in the list nor the reconnect: only what changed for it.
+    // The 2016-2017 package has no reconnect: only what changed for it.
     sections:
       import.meta.env.MODE === 'legacy'
         ? [
+            {
+              type: 'added',
+              items: [
+                "Programme guide: what's on now under each channel in the list",
+                'Now and next for a few seconds when a channel starts',
+              ],
+            },
             {
               type: 'changed',
               items: [
@@ -841,20 +848,19 @@ function shareTvLists() {
   shareLists(favorites.favoriteNames(), favorites.recentNames(), channels);
 }
 
-// Their guide too: first 10 s after a channel is up (never slowing it), then every 30 minutes. The Tizen 4+ package
-// also shows it (now on in the channel list, now and next when a channel starts); the 2016-2017 one only shares it.
+// Their guide too: first 10 s after a channel is up (never slowing it), then every 30 minutes. The app shows it as well:
+// now on in the channel list, now and next when a channel starts.
 const GUIDE_AFTER_MS = 10000;
 const GUIDE_EVERY_MS = 30 * 60000;
-const SHOW_GUIDE = import.meta.env.MODE !== 'legacy';
 let guideStarted = false;
 
 function startGuide() {
   if (guideStarted) return;
   guideStarted = true;
   const update = () =>
-    refreshGuide(favorites.favoriteNames(), favorites.recentNames(), channels, SHOW_GUIDE).then((guide) => {
+    refreshGuide(favorites.favoriteNames(), favorites.recentNames(), channels).then((guide) => {
       diag('guide: ' + Object.keys(guide).length + ' channels');
-      if (SHOW_GUIDE) ui.setGuide(guide);
+      ui.setGuide(guide);
     });
   setTimeout(() => {
     update();

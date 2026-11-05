@@ -231,7 +231,7 @@ body {
   min-width: 0;
 }
 
-/* With the playlist's guide (Tizen 4+ package): the channel name, and under it what's on now. Every row gets room for
+/* With the playlist's guide: the channel name, and under it what's on now. Every row gets room for
    both lines, rows without a programme too, so they all keep one height (the virtual scroll measures one stride) */
 .channel-list.with-guide .channel-item {
   padding-top: calc(8px * var(--tv-scale));
@@ -807,7 +807,7 @@ body {
   margin-right: 12px;
 }
 
-/* Now and next when a channel starts (Tizen 4+ package, from the playlist's guide) */
+/* Now and next when a channel starts (from the playlist's guide) */
 .channel-osd .osd-guide {
   max-width: calc(900px * var(--tv-scale));
   font-size: calc(22px * var(--tv-scale));
