@@ -452,20 +452,9 @@ body {
   pointer-events: none;
   z-index: 5;
 }
-/* No flex gap: unsupported on Tizen's Chromium — explicit sibling margin */
-.player-watermark > * + * {
-  margin-left: calc(8px * var(--tv-scale));
-}
-
 .player-watermark.docked {
   transform: translateX(0);
   opacity: 0.3;
-}
-
-.watermark-icon {
-  width: calc(22px * var(--tv-scale));
-  height: calc(22px * var(--tv-scale));
-  border-radius: calc(5px * var(--tv-scale));
 }
 
 .watermark-text {
