@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">RAFLIX IPTV</string>
+    <string name="loading_playlist">Loading the channel list…</string>
+    <string name="loading_channel">Loading %s</string>
+    <string name="retrying">Loading %1$s — try %2$d</string>
+    <string name="playlist_failed">Could not load the channel list. Check the TV\'s internet connection, then open the app again.</string>
+    <string name="stale_cache">Playlist update failed — using the saved list</string>
+    <string name="groups">Groups</string>
+    <string name="menu">Menu</string>
+    <string name="exit_question">Exit the app?</string>
+    <string name="exit">Exit</string>
+    <string name="cancel">Cancel</string>
+    <string name="favorite_added">♥ Added to favorites: %s</string>
+    <string name="favorite_removed">Removed from favorites: %s</string>
+    <string name="add_favorite">Add to favorites</string>
+    <string name="remove_favorite">Remove from favorites</string>
+    <string name="picture_format">Picture format: %s</string>
+    <string name="reload_channel">Reload channel</string>
+    <string name="stopped">Playback stopped — pick a channel to watch</string>
+    <string name="now">Now</string>
+    <string name="next">Next</string>
+    <string name="channels_count">%d channels</string>
+    <string name="playing_mark">▶</string>
+    <string-array name="picture_formats">
+        <item>Original</item>
+        <item>Full screen</item>
+        <item>Zoom</item>
+    </string-array>
+</resources>

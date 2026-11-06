@@ -51,6 +51,8 @@ en-tvplayer/
 │   ├── public/          Static assets
 │   └── vite.config.js   Vite configuration
 ├── tizen/               WGT build tools
+├── androidtv/           Android TV app, native (Kotlin + Media3/ExoPlayer), the same behavior from the same playlist:
+│                        see androidtv/README.md
 ├── scripts/             Release automation (`npm run release`)
 ├── favorites/           Favorites API (server.mjs → favorites.yml; epg.mjs: now/next from the XMLTV guide),
 │                        read by Raflix's "Directos" tab; the TV app no longer writes to it (its favorites and
@@ -66,7 +68,7 @@ en-tvplayer/
 └── README.md
 ```
 
-## 3b. Two packages, one code base
+## 3b. Two packages, one code base — and the native Android TV app
 
 - **Regular** (`npm run build`, `npm run tizen`): Tizen 4+ (2018+), Chromium 56, Shaka + AVPlay fallback. Checked by
   `npm run check:tizen4`.
@@ -81,6 +83,13 @@ en-tvplayer/
   `RAFLIX_TV=comedor npm run build:legacy && RAFLIX_TV=comedor TIZEN_CERT_PROFILE=FreeMyTV npm run tizen:legacy`). The
   build stops without it, with an unknown TV or an unfilled `<…>`; the package name carries the TV. On the TV, a
   build-time playlist under the same name swaps its URL in place (`playlistsToReplace`), so a TV keeps one "Raflix".
+- **Android TV** (`RAFLIX_TV=<tv> npm run android` → `androidtv/app/build/outputs/apk/debug/app-debug.apk`,
+  `npm run android:install -- <ip>`): a native Kotlin app (Sony BRAVIA, Android 9; an old TV, so no WebView), each
+  file a port of a player module (parseM3u → `M3uParser.kt`, guide.js → `Guide.kt`, ui.js lists → `Sidebar.kt`,
+  remote.js → `Remote.kt`, player.js → `PlayerEngine.kt` on ExoPlayer: per-channel headers, inline ClearKey,
+  retries). Same playlist rule (`playlists.local.json`, `RAFLIX_TV`), same ≤ 300 LOC rule, JUnit ports of the Vitest
+  cases (`cd androidtv && ./gradlew testDebugUnitTest`). A behavior change in the player's logic modules has its
+  twin there. Branch `androidtv`, worked on in the `en-iptv-wopr-androidtv` worktree; the Tizen builds are untouched.
 - Keep both working: the same `player.js`/`player-legacy.js` exports, and no `KeyboardEvent.key`-only handling (2016
   has keyCode only: `SAMSUNG_KEY_CODES` in remote.js). `tizen/install.py` picks the package by the TV's Tizen version.
 - The legacy package must survive a JavaScript failure: its stylesheet is a linked `styles.css` (Vite would inline it

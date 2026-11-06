@@ -1,0 +1,13 @@
+# Gradle and build output
+.gradle/
+build/
+*.apk
+*.aab
+# This machine's SDK path
+local.properties
+# IDE
+.idea/
+*.iml
+# Release signing (never in git)
+*.jks
+*.keystore

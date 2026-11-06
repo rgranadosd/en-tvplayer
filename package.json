@@ -1,7 +1,7 @@
 {
   "name": "en-tvplayer",
   "version": "1.0.3",
-  "description": "Samsung Tizen TV IPTV Player — install on any Tizen 5.0+ TV",
+  "description": "Samsung Tizen TV IPTV Player \u2014 install on any Tizen 5.0+ TV",
   "type": "module",
   "scripts": {
     "dev": "npm run dev -w player",
@@ -10,16 +10,18 @@
     "check:tizen4": "node scripts/check-tizen4.mjs",
     "check:tizen24": "node scripts/check-tizen24.mjs",
     "test": "npm run test -w player",
-    "lint": "eslint player/src scripts",
-    "format": "prettier --write player/src scripts",
-    "format:check": "prettier --check player/src scripts",
+    "lint": "eslint player/src scripts androidtv/install.mjs",
+    "format": "prettier --write player/src scripts androidtv/install.mjs",
+    "format:check": "prettier --check player/src scripts androidtv/install.mjs",
     "release": "node scripts/release.mjs",
     "tizen": "cd tizen && node package.mjs",
     "tizen:legacy": "cd tizen && node package.mjs --legacy",
     "tizen:install": "python3 tizen/install.py",
     "proxy": "npm start -w proxy",
     "favorites": "node favorites/server.mjs",
-    "prepare": "husky"
+    "prepare": "husky",
+    "android": "cd androidtv && ./gradlew --quiet assembleDebug && echo && echo APK: androidtv/app/build/outputs/apk/debug/app-debug.apk",
+    "android:install": "node androidtv/install.mjs"
   },
   "workspaces": [
     "player",
@@ -44,6 +46,10 @@
       "prettier --write"
     ],
     "scripts/**/*.mjs": [
+      "eslint --max-warnings=0",
+      "prettier --write"
+    ],
+    "androidtv/*.mjs": [
       "eslint --max-warnings=0",
       "prettier --write"
     ]

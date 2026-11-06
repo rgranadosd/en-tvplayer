@@ -61,7 +61,7 @@ export default [
     rules: { 'compat/compat': 'error' },
   },
   {
-    files: ['scripts/**/*.mjs', 'eslint.config.mjs'],
+    files: ['scripts/**/*.mjs', 'androidtv/*.mjs', 'eslint.config.mjs'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',

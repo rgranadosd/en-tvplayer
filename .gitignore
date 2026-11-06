@@ -21,6 +21,9 @@ tizen/author-key.pem
 # Local test builds (never committed)
 beta/
 
+# Android TV app (androidtv/.gitignore covers Gradle's build output and local.properties)
+*.apk
+
 # Extra playlists for local builds: their URLs can carry logins
 player/playlists.local.json
 
