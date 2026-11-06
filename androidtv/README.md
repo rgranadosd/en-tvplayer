@@ -21,8 +21,22 @@ The same behavior as the Tizen player, from the same playlist:
   that fails (with a notice).
 - Hardware video decoding, a `SurfaceView`, small buffers for a quick start: made for an old TV.
 
+Branding uses the current RAFLIX IPTV wordmark, not the old R icon: the launcher icons and TV banner come from
+`tizen/icon.png` and `tizen/icon-legacy.png`; the native watermark is a vector converted from
+`tizen/icons/raflix-iptv-wordmark-night.svg`.
+
 Not there (yet): the settings page, playlist editing on the TV (the playlist is built in, per TV), channel search,
 logos in the list, the Raflix share file.
+
+The native interface is in Spanish, including menus, loading notices, playback errors and built-in group labels,
+regardless of the TV's language. Channel names, playlist-provided groups and programme titles stay as supplied.
+Group identifiers and saved preferences are unchanged.
+
+RAFLIX opens only when selected; it does not register for boot. Exit, Home/switching to another app and screen-off
+end the session: player/retries, guide and playlist jobs and UI timers are stopped, the task is removed, and only
+RAFLIX's own process is terminated (including any blocking network reads). Screen-off returns to the TV launcher
+so waking the TV does not resume RAFLIX. Favorites, recent channels and the last channel remain saved for the next
+manual launch. No background playback or resumable task is kept.
 
 ## Requirements (this Mac)
 

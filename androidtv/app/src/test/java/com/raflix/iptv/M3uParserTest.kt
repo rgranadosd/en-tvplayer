@@ -33,6 +33,12 @@ class M3uParserTest {
     }
 
     @Test
+    fun missingNameUsesSpanishLabel() {
+        val ch = M3uParser.parse("#EXTM3U\n#EXTINF:-1\nhttps://x.example.com/a.ts\n")
+        assertEquals("Canal 1", ch.single().name)
+    }
+
+    @Test
     fun commasInsideQuotedNames() {
         val ch = M3uParser.parse("#EXTM3U\n#EXTINF:-1 group-title=\"A\",Show, With, Commas\nhttps://x.example.com/a\n")
         assertEquals("Show, With, Commas", ch[0].name)

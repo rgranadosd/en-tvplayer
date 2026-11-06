@@ -59,7 +59,7 @@ class Sidebar(private val panel: View, private val title: TextView, private val 
         selectedGroup = group
         displayChannels = Groups.channelsOf(host.groups(), group)
         mode = Mode.CHANNELS
-        title.text = group
+        title.text = groupLabel(group)
         val current = host.currentChannel()
         val focus = displayChannels.indexOfFirst { it === current }.let { if (it >= 0) it else 0 }
         adapter.submit(channelRows(), focus)
@@ -146,7 +146,15 @@ class Sidebar(private val panel: View, private val title: TextView, private val 
     }
 
     private fun groupRows(): List<Row> =
-        host.groups().map { Row("", it.name, host.channelsCount(it.channels.size), it.name == selectedGroup) }
+        host.groups().map { Row("", groupLabel(it.name), host.channelsCount(it.channels.size), it.name == selectedGroup) }
+
+    private fun groupLabel(name: String): String = when (name) {
+        Groups.ALL -> panel.context.getString(R.string.all_channels)
+        Groups.FAVORITES -> panel.context.getString(R.string.favorites)
+        Groups.RECENT -> panel.context.getString(R.string.recently_watched)
+        Channel.UNGROUPED -> panel.context.getString(R.string.ungrouped)
+        else -> name
+    }
 
     private fun show() {
         panel.visibility = View.VISIBLE

@@ -1,30 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">RAFLIX IPTV</string>
-    <string name="loading_playlist">Loading the channel list…</string>
-    <string name="loading_channel">Loading %s</string>
-    <string name="retrying">Loading %1$s — try %2$d</string>
-    <string name="playlist_failed">Could not load the channel list. Check the TV\'s internet connection, then open the app again.</string>
-    <string name="stale_cache">Playlist update failed — using the saved list</string>
-    <string name="groups">Groups</string>
-    <string name="menu">Menu</string>
-    <string name="exit_question">Exit the app?</string>
-    <string name="exit">Exit</string>
-    <string name="cancel">Cancel</string>
-    <string name="favorite_added">♥ Added to favorites: %s</string>
-    <string name="favorite_removed">Removed from favorites: %s</string>
-    <string name="add_favorite">Add to favorites</string>
-    <string name="remove_favorite">Remove from favorites</string>
-    <string name="picture_format">Picture format: %s</string>
-    <string name="reload_channel">Reload channel</string>
-    <string name="stopped">Playback stopped — pick a channel to watch</string>
-    <string name="now">Now</string>
-    <string name="next">Next</string>
-    <string name="channels_count">%d channels</string>
+    <string name="loading_playlist">Cargando la lista de canales…</string>
+    <string name="loading_channel">Cargando %s</string>
+    <string name="retrying">Cargando %1$s — intento %2$d</string>
+    <string name="playlist_failed">No se ha podido cargar la lista de canales. Comprueba la conexión a Internet de la televisión y vuelve a abrir la aplicación.</string>
+    <string name="stale_cache">No se ha podido actualizar la lista de canales — se usará la lista guardada</string>
+    <string name="groups">Menú Principal</string>
+    <string name="menu">Menú</string>
+    <string name="exit_question">¿Salir de la aplicación?</string>
+    <string name="exit">Salir</string>
+    <string name="cancel">Cancelar</string>
+    <string name="favorite_added">♥ Añadido a favoritos: %s</string>
+    <string name="favorite_removed">Eliminado de favoritos: %s</string>
+    <string name="add_favorite">Añadir a favoritos</string>
+    <string name="remove_favorite">Eliminar de favoritos</string>
+    <string name="picture_format">Formato de imagen: %s</string>
+    <string name="reload_channel">Recargar canal</string>
+    <string name="stopped">Reproducción detenida — selecciona un canal para verlo</string>
+    <string name="now">Ahora</string>
+    <string name="next">A continuación</string>
+    <string name="channels_count">%d canales</string>
+    <string name="all_channels">Todos los canales</string>
+    <string name="favorites">★ Favoritos</string>
+    <string name="recently_watched">Vistos recientemente</string>
+    <string name="ungrouped">Sin grupo</string>
+    <string name="stream_ended">La emisión ha finalizado</string>
+    <string name="stream_refused">El servidor ha rechazado la emisión%1$s</string>
+    <string name="stream_connection_failed">No se puede conectar con la emisión</string>
+    <string name="stream_unsupported">Esta televisión no puede reproducir este formato de emisión</string>
+    <string name="stream_drm_failed">DRM: las claves no permiten reproducir esta emisión</string>
+    <string name="stream_unreadable">No se puede leer la emisión</string>
+    <string name="stream_failed">No se ha podido reproducir la emisión (código %1$d)</string>
     <string name="playing_mark">▶</string>
     <string-array name="picture_formats">
         <item>Original</item>
-        <item>Full screen</item>
-        <item>Zoom</item>
+        <item>Pantalla completa</item>
+        <item>Ampliada</item>
     </string-array>
 </resources>

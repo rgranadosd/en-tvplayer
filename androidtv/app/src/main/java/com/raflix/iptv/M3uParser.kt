@@ -30,7 +30,7 @@ object M3uParser {
                 continue
             }
             val sep = nameSeparator(line)
-            val name = if (sep >= 0) line.substring(sep + 1).trim() else "Channel " + (result.size + 1)
+            val name = if (sep >= 0) line.substring(sep + 1).trim() else "Canal " + (result.size + 1)
             val attrs = if (sep >= 0) line.substring(0, sep) else line
             var clearKeys: Map<String, String> = emptyMap()
             var userAgent: String? = null

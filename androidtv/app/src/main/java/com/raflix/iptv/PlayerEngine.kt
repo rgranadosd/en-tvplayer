@@ -120,7 +120,7 @@ class PlayerEngine(private val context: Context, private val view: PlayerView, p
                         attempts = 0
                         listener.onPlaying()
                     }
-                    Player.STATE_ENDED -> scheduleRetry("Stream ended") // a live stream never ends on purpose
+                    Player.STATE_ENDED -> scheduleRetry(context.getString(R.string.stream_ended)) // a live stream never ends on purpose
                     else -> {}
                 }
             }
@@ -156,17 +156,17 @@ class PlayerEngine(private val context: Context, private val view: PlayerView, p
     }
 
     private fun describe(error: PlaybackException): String = when (error.errorCode) {
-        PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS -> "The server refused the stream" + httpStatus(error)
+        PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS -> context.getString(R.string.stream_refused, httpStatus(error))
         PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
-        PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT -> "No connection to the stream"
+        PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT -> context.getString(R.string.stream_connection_failed)
         PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED,
-        PlaybackException.ERROR_CODE_DECODER_INIT_FAILED -> "This TV can't decode this stream"
+        PlaybackException.ERROR_CODE_DECODER_INIT_FAILED -> context.getString(R.string.stream_unsupported)
         PlaybackException.ERROR_CODE_DRM_LICENSE_ACQUISITION_FAILED,
         PlaybackException.ERROR_CODE_DRM_SCHEME_UNSUPPORTED,
-        PlaybackException.ERROR_CODE_DRM_UNSPECIFIED -> "DRM: the keys don't open this stream"
+        PlaybackException.ERROR_CODE_DRM_UNSPECIFIED -> context.getString(R.string.stream_drm_failed)
         PlaybackException.ERROR_CODE_PARSING_MANIFEST_MALFORMED,
-        PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED -> "The stream isn't readable"
-        else -> error.errorCodeName.removePrefix("ERROR_CODE_").lowercase().replace('_', ' ')
+        PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED -> context.getString(R.string.stream_unreadable)
+        else -> context.getString(R.string.stream_failed, error.errorCode)
     }
 
     private fun httpStatus(error: PlaybackException): String {

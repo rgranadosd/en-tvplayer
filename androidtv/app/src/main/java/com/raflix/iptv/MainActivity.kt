@@ -23,6 +23,7 @@ class MainActivity : AppCompatActivity(), Sidebar.Host, PlayerEngine.Listener {
     private lateinit var osd: Osd
     private lateinit var lists: TvLists
     private lateinit var playlist: Playlist
+    private lateinit var session: AppSession
     private val guide = Guide()
     private val handler = Handler(Looper.getMainLooper())
 
@@ -46,17 +47,13 @@ class MainActivity : AppCompatActivity(), Sidebar.Host, PlayerEngine.Listener {
         sidebar = Sidebar(binding.sidebar, binding.sidebarTitle, binding.sidebarList, this)
         engine = PlayerEngine(this, binding.playerView, this)
         engine.start(lists.pictureFormat)
+        session = AppSession(this, engine, sidebar, osd, handler)
         loadPlaylist()
     }
 
-    override fun onStart() {
-        super.onStart()
-        current?.let { engine.tune(it) } // back from the launcher: the channel again
-    }
-
     override fun onStop() {
-        engine.release() // nothing plays behind the launcher
         super.onStop()
+        if (!isChangingConfigurations) session.close()
     }
 
     private fun hideSystemBars() {
@@ -155,7 +152,7 @@ class MainActivity : AppCompatActivity(), Sidebar.Host, PlayerEngine.Listener {
         if (exitDialog?.isShowing == true) return
         exitDialog = AlertDialog.Builder(this)
             .setMessage(R.string.exit_question)
-            .setPositiveButton(R.string.exit) { _, _ -> finishAndRemoveTask() }
+            .setPositiveButton(R.string.exit) { _, _ -> session.close(returnHome = true) }
             .setNegativeButton(R.string.cancel, null)
             .show()
     }

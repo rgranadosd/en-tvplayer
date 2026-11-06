@@ -90,6 +90,9 @@ en-tvplayer/
   retries). Same playlist rule (`playlists.local.json`, `RAFLIX_TV`), same ≤ 300 LOC rule, JUnit ports of the Vitest
   cases (`cd androidtv && ./gradlew testDebugUnitTest`). A behavior change in the player's logic modules has its
   twin there. Branch `androidtv`, worked on in the `en-iptv-wopr-androidtv` worktree; the Tizen builds are untouched.
+- Android branding uses the RAFLIX IPTV wordmark: `res/drawable/raflix_wordmark.xml` is converted from
+  `tizen/icons/raflix-iptv-wordmark-night.svg`; launcher graphics use `tizen/icon.png` and `tizen/icon-legacy.png`,
+  never the obsolete R icon.
 - Keep both working: the same `player.js`/`player-legacy.js` exports, and no `KeyboardEvent.key`-only handling (2016
   has keyCode only: `SAMSUNG_KEY_CODES` in remote.js). `tizen/install.py` picks the package by the TV's Tizen version.
 - The legacy package must survive a JavaScript failure: its stylesheet is a linked `styles.css` (Vite would inline it

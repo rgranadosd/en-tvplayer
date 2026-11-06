@@ -139,15 +139,14 @@
         android:textSize="18sp"
         android:visibility="gone" />
 
-    <TextView
+    <ImageView
         android:id="@+id/watermark"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="160dp"
+        android:layout_height="35dp"
         android:layout_gravity="bottom|end"
         android:layout_margin="28dp"
         android:alpha="0.35"
-        android:text="@string/app_name"
-        android:textColor="@color/text"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+        android:contentDescription="@string/app_name"
+        android:src="@drawable/raflix_wordmark"
+        android:scaleType="fitCenter" />
 </FrameLayout>

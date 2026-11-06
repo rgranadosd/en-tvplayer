@@ -57,6 +57,13 @@ class Osd(root: View) {
         errorLine.visibility = if (text.isNullOrEmpty()) View.GONE else View.VISIBLE
     }
 
+    fun close() {
+        handler.removeCallbacksAndMessages(null)
+        box.visibility = View.GONE
+        loading.visibility = View.GONE
+        errorLine.visibility = View.GONE
+    }
+
     private fun show(head: String, first: String?, second: String?, ms: Long) {
         handler.removeCallbacks(hide)
         title.text = head
